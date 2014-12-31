@@ -316,7 +316,7 @@ class Service
   def label; @label ||= formula.plist_name end
 
   # Path to a static plist file, this is always `homebrew.mxcl.<formula>.plist`.
-  def plist; @plist ||= formula.prefix + "#{label}.plist" end
+  def plist; @plist ||= formula.opt_prefix + "#{label}.plist" end
 
   # Path to destination plist directory, if run as root it's `boot_path`, else `user_path`.
   def dest_dir; (ServicesCli.root? ? ServicesCli.boot_path : ServicesCli.user_path) end
@@ -324,8 +324,11 @@ class Service
   # Path to destination plist, if run as root it's in `boot_path`, else `user_path`.
   def dest; dest_dir + "#{label}.plist" end
 
+  # Returns `true` if any version of the formula is installed.
+  def installed?; formula.installed? || ((dir = formula.opt_prefix).directory? && dir.children.length > 0) end
+
   # Returns `true` if formula implements #startup_plist or file exists.
-  def plist?; formula.installed? && (plist.file? || formula.respond_to?(:startup_plist)) end
+  def plist?; installed? && (plist.file? || formula.respond_to?(:startup_plist)) end
 
   # Returns `true` if service is loaded, else false.
   def loaded?; %x{#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null}.chomp =~ /#{label}\z/ end
