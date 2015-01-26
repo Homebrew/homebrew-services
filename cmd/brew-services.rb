@@ -114,7 +114,7 @@ module ServicesCli
     # Find all currently running services via launchctl list
     def running; %x{#{launchctl} list | grep homebrew.mxcl}.chomp.split("\n").map { |svc| $1 if svc =~ /(homebrew\.mxcl\..+)\z/ }.compact end
 
-    # Check if running as homebre and load required libraries et al.
+    # Check if running as homebrew and load required libraries et al.
     def homebrew!
       abort("Runtime error: homebrew is required, please start via `#{bin} ...`") unless defined?(HOMEBREW_LIBRARY_PATH)
       %w{fileutils pathname tempfile formula utils}.each { |req| require(req) }
