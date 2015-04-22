@@ -6,7 +6,7 @@ Integrates homebrew formulae with MacOS X' `launchctl` manager.
 ## Installation ##
 
 ```
-brew tap gapple/services
+brew tap homebrew/services
 ```
 
 ## EXAMPLES ##
