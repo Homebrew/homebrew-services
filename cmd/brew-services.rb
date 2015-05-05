@@ -118,7 +118,7 @@ module ServicesCli
     def homebrew!
       abort("Runtime error: homebrew is required, please start via `#{bin} ...`") unless defined?(HOMEBREW_LIBRARY_PATH)
       %w{fileutils pathname tempfile formula utils}.each { |req| require(req) }
-      self.send(:extend, ::FileUtils)
+      extend(FileUtils)
     end
 
     # Access current service
