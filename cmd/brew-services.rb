@@ -118,8 +118,7 @@ module ServicesCli
     def homebrew!
       abort("Runtime error: homebrew is required, please start via `#{bin} ...`") unless defined?(HOMEBREW_LIBRARY_PATH)
       %w{fileutils pathname tempfile formula utils}.each { |req| require(req) }
-      self.send(:extend, ::FileUtils)
-      ::Formula.send(:include, Service::PlistSupport)
+      extend(FileUtils)
     end
 
     # Access current service
@@ -290,13 +289,6 @@ end
 # Wrapper for a formula to handle service related stuff like parsing
 # and generating the plist file.
 class Service
-
-  # Support module which will be used to extend Formula with a method :)
-  module PlistSupport
-    # As a replacement value for `<key>UserName</key>`.
-    def startup_user; ServicesCli.user end
-  end
-
   # Access the `Formula` instance
   attr_reader :formula
 
@@ -355,10 +347,11 @@ class Service
               gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
 
     # and force fix UserName, if necessary
-    if formula.startup_user != "root" && data =~ %r{<key>UserName</key>\s*<string>root</string>}
-      data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, '\1' + formula.startup_user + '\2')
-    elsif ServicesCli.root? && formula.startup_user != "root" && data !~ %r{<key>UserName</key>}
-      data = data.gsub(%r{(</dict>\s*</plist>)}, "  <key>UserName</key><string>#{formula.startup_user}</string>\n\\1")
+    user = ServicesCli.user
+    if user != "root" && data =~ %r{<key>UserName</key>\s*<string>root</string>}
+      data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, '\1' + user + '\2')
+    elsif ServicesCli.root? && user != "root" && data !~ %r{<key>UserName</key>}
+      data = data.gsub(%r{(</dict>\s*</plist>)}, "  <key>UserName</key><string>#{user}</string>\n\\1")
     end
 
     if ARGV.verbose?
