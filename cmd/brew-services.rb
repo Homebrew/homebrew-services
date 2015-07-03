@@ -347,11 +347,12 @@ class Service
               gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
 
     # and force fix UserName, if necessary
-    user = ServicesCli.user
-    if user != "root" && data =~ %r{<key>UserName</key>\s*<string>root</string>}
-      data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, '\1' + user + '\2')
-    elsif ServicesCli.root? && user != "root" && data !~ %r{<key>UserName</key>}
-      data = data.gsub(%r{(</dict>\s*</plist>)}, "  <key>UserName</key><string>#{user}</string>\n\\1")
+    if !ServicesCli.root?
+      if data =~ %r{<key>UserName</key>}
+        data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, '\1' + ServicesCli.user + '\2')
+      else
+        data = data.gsub(%r{(\s*</dict>\s*</plist>)}, "\n    <key>UserName</key>\n    <string>" + ServicesCli.user + "</string>\\1")
+      end
     end
 
     if ARGV.verbose?
