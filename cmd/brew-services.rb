@@ -175,16 +175,41 @@ module ServicesCli
       true
     end
 
-    # List all running services with PID and status and path to plist file, if available
+    # List all available services with status, user, and path to plist file
     def list
-      opoo("No %s services controlled by `#{bin}` running..." % [root? ? 'root' : 'user-space']) and return if running.empty?
-      running.each do |label|
-        if svc = Service.from(label)
-          status = !svc.dest.file? ? "#{Tty.red}stale  " : "#{Tty.white}started"
-          puts "%-10.10s %s#{Tty.reset}  %7s %s" % [svc.name, status, svc.pid ? svc.pid.to_s : '-', svc.dest.file? ? svc.dest : label]
-        else
-          puts "%-10.10s #{Tty.red}unknown#{Tty.reset} %7s #{label}" % ["?", "-"]
-        end
+
+      formulae = Formula.installed
+        .map { |formula|  Service.new(formula) }
+        .select { |service|  service.plist?  }
+        .map { |service|
+          formula = {
+            :name => service.formula.name,
+            :status => false,
+            :user => nil,
+            :plist => nil
+          };
+
+          if (ServicesCli.boot_path + "#{service.label}.plist").exist?
+            formula[:status] = true
+            formula[:user] = "root"
+            formula[:plist] = ServicesCli.boot_path + "#{service.label}.plist"
+          elsif (ServicesCli.user_path + "#{service.label}.plist").exist?
+            formula[:status] = true
+            formula[:user] = ServicesCli.user
+            formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
+          end
+
+          formula
+        }
+
+      opoo("No services available to control with `#{bin}`") and return if formulae.empty?
+
+      longest_name = [formulae.max_by{ |formula|  formula[:name].length }[:name].length, 4].max
+      longest_user = formulae.max_by{ |formula|  formula[:user].nil? ? 4 : formula[:user].length }[:user].length
+
+      puts "#{Tty.white}%-#{longest_name}.#{longest_name}s %-7.7s %-#{longest_user}.#{longest_user}s %s#{Tty.reset}" % ["Name", "Status", "User", "Plist"]
+      formulae.each do |formula|
+        puts "%-#{longest_name}.#{longest_name}s %s %-#{longest_user}.#{longest_user}s %s" % [formula[:name], formula[:status] ? "#{Tty.green}started#{Tty.reset}" : "stopped", formula[:user], formula[:plist]]
       end
     end
 
@@ -320,7 +345,7 @@ class Service
   def installed?; formula.installed? || ((dir = formula.opt_prefix).directory? && dir.children.length > 0) end
 
   # Returns `true` if formula implements #startup_plist or file exists.
-  def plist?; installed? && (plist.file? || formula.respond_to?(:startup_plist)) end
+  def plist?; installed? && (plist.file? || !formula.plist.nil? || !formula.startup_plist.nil?) end
 
   # Returns `true` if service is loaded, else false.
   def loaded?; %x{#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null}.chomp =~ /#{label}\z/ end
