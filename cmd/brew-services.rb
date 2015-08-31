@@ -340,6 +340,8 @@ class Service
     elsif data.respond_to?(:keys) && data.keys.include?(:url)
       require 'open-uri'
       data = open(data).read
+    elsif !data
+      odie "Could not read the plist for `#{name}`!"
     end
 
     # replace "template" variables and ensure label is always, always homebrew.mxcl.<formula>
