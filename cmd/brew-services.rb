@@ -206,11 +206,11 @@ module ServicesCli
 
       longest_name_length = [formulae.max_by{ |formula|  formula[:name].length }[:name].length, 4].max
       longest_user = formulae.max_by{ |formula|  formula[:user].nil? ? 4 : formula[:user].length }[:user]
-      longest_name_length = longest_user.nil? ? 4 : longest_user.length
+      longest_user_length = longest_user.nil? ? 4 : longest_user.length
 
-      puts "#{Tty.white}%-#{longest_name_length}.#{longest_name_length}s %-7.7s %-#{longest_name_length}.#{longest_name_length}s %s#{Tty.reset}" % ["Name", "Status", "User", "Plist"]
+      puts "#{Tty.white}%-#{longest_name_length}.#{longest_name_length}s %-7.7s %-#{longest_user_length}.#{longest_user_length}s %s#{Tty.reset}" % ["Name", "Status", "User", "Plist"]
       formulae.each do |formula|
-        puts "%-#{longest_name_length}.#{longest_name_length}s %s %-#{longest_name_length}.#{longest_name_length}s %s" % [formula[:name], formula[:status] ? "#{Tty.green}started#{Tty.reset}" : "stopped", formula[:user], formula[:plist]]
+        puts "%-#{longest_name_length}.#{longest_name_length}s %s %-#{longest_user_length}.#{longest_user_length}s %s" % [formula[:name], formula[:status] ? "#{Tty.green}started#{Tty.reset}" : "stopped", formula[:user], formula[:plist]]
       end
     end
 
