@@ -205,7 +205,7 @@ module ServicesCli
       opoo("No services available to control with `#{bin}`") and return if formulae.empty?
 
       longest_name = [formulae.max_by{ |formula|  formula[:name].length }[:name].length, 4].max
-      longest_user = formulae.max_by{ |formula|  formula[:user].nil? ? 4 : formula[:user].length }[:user].length
+      longest_user = [formulae.map{ |formula|  formula[:user].nil? ? 4 : formula[:user].length }.max, 4].max
 
       puts "#{Tty.white}%-#{longest_name}.#{longest_name}s %-7.7s %-#{longest_user}.#{longest_user}s %s#{Tty.reset}" % ["Name", "Status", "User", "Plist"]
       formulae.each do |formula|
