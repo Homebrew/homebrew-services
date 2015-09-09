@@ -121,9 +121,6 @@ module ServicesCli
       extend(FileUtils)
     end
 
-    # Access current service
-    def service; @service ||= Service.new(Formula.factory(@formula)) if @formula end
-
     # Print usage and `exit(...)` with supplied exit code, if code
     # is set to `false`, then exit is ignored.
     def usage(code = 0)
@@ -146,38 +143,237 @@ module ServicesCli
       true
     end
 
+    # Kill service without plist file by issuing a `launchctl remove` command
+    def kill(svc)
+      safe_system launchctl, "remove", svc.label
+      odie("Failed to remove `#{svc.name}`, try again?") unless $?.to_i == 0
+      while svc.loaded?
+        puts "  ...checking status"
+        sleep(5)
+      end
+      ohai "Successfully stopped `#{svc.name}` via #{svc.label}"
+    end
+
     # Run and start the command loop.
     def run!
       homebrew!
-      usage if ARGV.empty? || ARGV.include?('help') || ARGV.include?('--help') || ARGV.include?('-h')
 
-      # parse arguments
-      @args = ARGV.reject { |arg| arg[0] == 45 }.map { |arg| arg.include?("/") ? arg : arg.downcase } # 45.chr == '-'
-      @cmd = @args.shift
-      @formula = @args.shift
+      flags = ARGV.select { |arg| arg[0] == 45 }
+      args = (ARGV - flags).map { |arg| arg.include?("/") ? arg : arg.downcase }
+      ServicesCommand.execute(args, flags)
+    end
+  end
+end
 
-      # dispatch commands and aliases
-      case @cmd
-        when 'cleanup', 'clean', 'cl', 'rm' then cleanup
-        when 'list', 'ls' then list
-        when 'restart', 'relaunch', 'reload', 'r' then check and restart
-        when 'start', 'launch', 'load', 's', 'l' then check and start
-        when 'stop', 'unload', 'terminate', 'term', 't', 'u' then check and stop
-        else
-          onoe "Unknown command `#{@cmd}`"
-          usage(1)
+module ServicesCommand
+  class << self
+    def execute(args, flags)
+      commands.each do |command_class|
+        command = command_class.new(args, flags)
+        if command.applicable?
+          command.prepare
+          command.execute
+          break
+        end
       end
     end
 
-    # Check if formula has been found
-    def check
-      odie("Formula missing, please provide a formula name") unless service
-      true
+    def commands
+      @commands ||= [Help, All, Start, Stop, Restart, List, Unknown]
+    end
+  end
+
+  module Base
+    attr_reader :args, :flags
+
+    def initialize(args, flags)
+      @args, @flags = args, flags
     end
 
-    # List all available services with status, user, and path to plist file
-    def list
+    def prepare
+    end
+  end
 
+  module Cli
+    def cli
+      ServicesCli
+    end
+
+    delegate :bin, :launchctl, :root?, :user, :boot_path, :user_path, :path, :running, :homebrew!, :usage, :kill, to: :cli
+  end
+
+  module Service
+    attr_reader :service
+
+    delegate :formula, :name, :label, :plist, :dest_dir, :dest, :installed?, :plist?, :loaded?, :pid, :generate_plist, to: :service
+
+    def prepare
+      super
+      ensure_service!
+    end
+
+    def ensure_service!
+      formula = args[1]
+      odie("Formula missing, please provide a formula name") unless formula
+      @service = Service.new(Formula.factory(@formula))
+    end
+  end
+
+  class Help
+    include Command::Base
+    include Command::Cli
+
+    def applicable?
+      args.empty? || args.include?('help') || (flags & %w(-h --help)).any?
+    end
+
+    def execute
+      usage
+    end
+  end
+
+  class All
+    include Command::Base
+
+    def applicable?
+      (flags & %w(-a --all)).any?
+    end
+
+    attr_reader :command, :other_args, :filtered_flags
+
+    def prepare
+      @other_args = args.dup
+      @command = other_args.shift
+      @filtered_flags = flags - %w(-a --all)
+    end
+
+    def execute
+      formulae.each do |formula|
+        ServicesCommand.execute([command, formula] + other_args, filtered_flags)
+      end
+    end
+
+    private
+
+    def formulae
+      Formula.installed
+        .map { |formula| Service.new(formula) }
+        .select(&:plist?)
+        .map { |service| service.formula.name }
+    end
+  end
+
+  class Start
+    include Command::Base
+    include Command::Cli
+    include Command::Service
+
+    def applicable?
+      (args & %w(start launch load s l)).any?
+    end
+
+    def prepare
+      super
+      ensure_not_started!
+      ensure_plist!
+    end
+
+    def execute
+      temp = Tempfile.new(label)
+      temp << generate_plist(custom_plist)
+      temp.flush
+
+      rm dest if dest.exist?
+      dest_dir.mkpath unless dest_dir.directory?
+      cp temp.path, dest
+
+      # clear tempfile
+      temp.close
+
+      safe_system launchctl, "load", "-w", dest.to_s
+      $?.to_i != 0 ? odie("Failed to start `#{name}`") : ohai("Successfully started `#{name}` (label: #{label})")
+    end
+
+    private
+
+    def ensure_not_started!
+      return true unless loaded?
+      odie "Service `#{name}` already started, use `#{bin} restart #{name}`"
+    end
+
+    def ensure_plist!
+      return true if custom_plist || plist
+      odie "Formula `#{name}` not installed, #startup_plist not implemented or no plist file found"
+    end
+
+    def custom_plist
+      return @custom_plist if @custom_plist
+      return unless custom_plist = args[2]
+      return @custom_plist = { :url => custom_plist } if custom_plist =~ %r{\Ahttps?://.+}
+      return @custom_plist = Pathname.new(custom_plist) if File.exist?(custom_plist)
+      odie "#{custom_plist} is not a url or exising file"
+    end
+  end
+
+  class Stop
+    include Command::Base
+    include Command::Cli
+    include Command::Service
+
+    def applicable?
+      (args & %w(stop unload terminate term t u)).any?
+    end
+
+    def prepare
+      super
+      ensure_started!
+    end
+
+    def execute
+      if dest.exist?
+        puts "Stopping `#{name}`... (might take a while)"
+        safe_system launchctl, "unload", "-w", dest.to_s
+        $?.to_i != 0 ? odie("Failed to stop `#{name}`") : ohai("Successfully stopped `#{name}` (label: #{label})")
+      else
+        puts "Stopping stale service `#{name}`... (might take a while)"
+        kill(service)
+      end
+
+      rm dest if dest.exist?
+    end
+
+    private
+
+    def ensure_started!
+      return true if loaded?
+      rm dest if dest.exist? # get rid of installed plist anyway, dude
+      odie "Service `#{name}` not running, wanna start it? Try `#{bin} start #{name}`"
+    end
+  end
+
+  class Restart
+    include Command::Base
+    include Command::Service
+
+    def applicable?
+      (args & %w(restart relaunch reload r)).any?
+    end
+
+    def execute
+      Stop.execute(args, flags) if loaded?
+      Start.execute(args, flags)
+    end
+  end
+
+  class List
+    include Command::Base
+    include Command::Cli
+
+    def applicable?
+      (args & %w(list ls)).any?
+    end
+
+    def execute
       formulae = Formula.installed
         .map { |formula|  Service.new(formula) }
         .select { |service|  service.plist?  }
@@ -212,9 +408,18 @@ module ServicesCli
         puts "%-#{longest_name}.#{longest_name}s %s %-#{longest_user}.#{longest_user}s %s" % [formula[:name], formula[:status] ? "#{Tty.green}started#{Tty.reset}" : "stopped", formula[:user], formula[:plist]]
       end
     end
+  end
 
-    # Kill services without plist file and remove unused plists
-    def cleanup
+  class Cleanup
+    include Command::Base
+    include Command::Cli
+
+    def applicable?
+      (args & %w(cleanup clean cl rm)).any?
+      true
+    end
+
+    def execute
       cleaned = []
 
       # 1. kill services which have no plist file
@@ -241,72 +446,19 @@ module ServicesCli
 
       puts "All #{root? ? 'root' : 'user-space'} services OK, nothing cleaned..." if cleaned.empty?
     end
+  end
 
-    # Stop if loaded, then start again
-    def restart
-      stop if service.loaded?
-      start
+  class Unknown
+    include Command::Base
+    include Command::Cli
+
+    def applicable?
+      true
     end
 
-    # Start a service
-    def start
-      odie "Service `#{service.name}` already started, use `#{bin} restart #{service.name}`" if service.loaded?
-
-      custom_plist = @args.first
-      if custom_plist
-        if custom_plist =~ %r{\Ahttps?://.+}
-          custom_plist = { :url => custom_plist }
-        elsif File.exist?(custom_plist)
-          custom_plist = Pathname.new(custom_plist)
-        else
-          odie "#{custom_plist} is not a url or exising file"
-        end
-      end
-
-      odie "Formula `#{service.name}` not installed, #startup_plist not implemented or no plist file found" if !custom_plist && !service.plist?
-
-      temp = Tempfile.new(service.label)
-      temp << service.generate_plist(custom_plist)
-      temp.flush
-
-      rm service.dest if service.dest.exist?
-      service.dest_dir.mkpath unless service.dest_dir.directory?
-      cp temp.path, service.dest
-
-      # clear tempfile
-      temp.close
-
-      safe_system launchctl, "load", "-w", service.dest.to_s
-      $?.to_i != 0 ? odie("Failed to start `#{service.name}`") : ohai("Successfully started `#{service.name}` (label: #{service.label})")
-    end
-
-    # Stop a service or kill if no plist file available...
-    def stop
-      unless service.loaded?
-        rm service.dest if service.dest.exist? # get rid of installed plist anyway, dude
-        odie "Service `#{service.name}` not running, wanna start it? Try `#{bin} start #{service.name}`"
-      end
-
-      if service.dest.exist?
-        puts "Stopping `#{service.name}`... (might take a while)"
-        safe_system launchctl, "unload", "-w", service.dest.to_s
-        $?.to_i != 0 ? odie("Failed to stop `#{service.name}`") : ohai("Successfully stopped `#{service.name}` (label: #{service.label})")
-      else
-        puts "Stopping stale service `#{service.name}`... (might take a while)"
-        kill(service)
-      end
-      rm service.dest if service.dest.exist?
-    end
-
-    # Kill service without plist file by issuing a `launchctl remove` command
-    def kill(svc)
-      safe_system launchctl, "remove", svc.label
-      odie("Failed to remove `#{svc.name}`, try again?") unless $?.to_i == 0
-      while svc.loaded?
-        puts "  ...checking status"
-        sleep(5)
-      end
-      ohai "Successfully stopped `#{svc.name}` via #{svc.label}"
+    def execute
+      onoe "Unknown command `#{args[0]}`"
+      usage(1)
     end
   end
 end
