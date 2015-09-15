@@ -1,0 +1,15 @@
+# Force OS X.
+language: objective-c
+os: osx
+
+# Empty (to avoid Bundler).
+install:
+  - brew install mysql
+
+# Install Strap and then test installing packages works.
+script:
+  - PATH="cmd:$PATH" brew services start mysql
+  - PATH="cmd:$PATH" brew services list | grep mysql
+  - sleep 2
+  - mysql -uroot -e 'show databases'
+  - PATH="cmd:$PATH" brew services stop mysql
