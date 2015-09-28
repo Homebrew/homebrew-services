@@ -178,10 +178,10 @@ module ServicesCli
     # List all available services with status, user, and path to plist file
     def list
 
-      formulae = Formula.installed
-        .map { |formula|  Service.new(formula) }
-        .select { |service|  service.plist?  }
-        .map { |service|
+      formulae = Formula.installed.
+        map { |formula|  Service.new(formula) }.
+        select { |service|  service.plist?  }.
+        map { |service|
           formula = {
             :name => service.formula.name,
             :status => false,
