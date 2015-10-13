@@ -202,7 +202,10 @@ module ServicesCli
           formula
         }
 
-      opoo("No services available to control with `#{bin}`") and return if formulae.empty?
+      if formulae.empty?
+        opoo("No services available to control with `#{bin}`")
+        return
+      end
 
       longest_name = [formulae.max_by{ |formula|  formula[:name].length }[:name].length, 4].max
       longest_user = [formulae.map{ |formula|  formula[:user].nil? ? 4 : formula[:user].length }.max, 4].max
