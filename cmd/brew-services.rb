@@ -253,7 +253,10 @@ module ServicesCli
 
     # Start a service
     def start
-      odie "Service `#{service.name}` already started, use `#{bin} restart #{service.name}`" if service.loaded?
+      if service.loaded?
+        puts "Service `#{service.name}` already started, use `#{bin} restart #{service.name}` to restart."
+        return
+      end
 
       custom_plist = @args.first
       if custom_plist
