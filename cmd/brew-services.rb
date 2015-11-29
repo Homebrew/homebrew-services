@@ -5,11 +5,11 @@
 #
 # ## SYNOPSIS
 #
-# [<sudo>] `brew services` `list`<br>
-# [<sudo>] `brew services` `restart` <formula><br>
-# [<sudo>] `brew services` `start` <formula> [<plist>]<br>
+# [<sudo>] `brew services` `list`
+# [<sudo>] `brew services` `restart` <formula>
+# [<sudo>] `brew services` `start` <formula> [<plist>]
 # [<sudo>] `brew services` `stop` <formula>|--all
-# [<sudo>] `brew services` `cleanup`<br>
+# [<sudo>] `brew services` `cleanup`
 #
 # ## DESCRIPTION
 #
