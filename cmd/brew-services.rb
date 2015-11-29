@@ -8,7 +8,7 @@
 # [<sudo>] `brew services` `list`<br>
 # [<sudo>] `brew services` `restart` <formula><br>
 # [<sudo>] `brew services` `start` <formula> [<plist>]<br>
-# [<sudo>] `brew services` `stop` <formula><br>
+# [<sudo>] `brew services` `stop` <formula>|--all
 # [<sudo>] `brew services` `cleanup`<br>
 #
 # ## DESCRIPTION
@@ -83,6 +83,10 @@
 #     $ brew services list
 #     $ sudo brew services list
 #
+# Stop all running services for current user:
+#
+#     $ brew services stop --all
+#
 # ## BUGS
 #
 # `brew-services.rb` might not handle all edge cases, though it tries
@@ -127,7 +131,7 @@ module ServicesCli
     # Print usage and `exit(...)` with supplied exit code, if code
     # is set to `false`, then exit is ignored.
     def usage(code = 0)
-      puts "usage: [sudo] #{bin} [--help] <command> [<formula>]"
+      puts "usage: [sudo] #{bin} [--help] <command> [<formula>|--all]"
       puts
       puts "Small wrapper around `launchctl` for supported formulae, commands available:"
       puts "   cleanup Get rid of stale services and unused plists"
@@ -162,7 +166,12 @@ module ServicesCli
         when 'list', 'ls' then list
         when 'restart', 'relaunch', 'reload', 'r' then check and restart
         when 'start', 'launch', 'load', 's', 'l' then check and start
-        when 'stop', 'unload', 'terminate', 'term', 't', 'u' then check and stop
+        when 'stop', 'unload', 'terminate', 'term', 't', 'u'
+          if @formula == '--all'
+            stopall
+          else
+            check and stop
+          end
         else
           onoe "Unknown command `#{@cmd}`"
           usage(1)
@@ -302,6 +311,16 @@ module ServicesCli
         kill(service)
       end
       rm service.dest if service.dest.exist?
+    end
+
+    # Stop all all currently running services
+    def stopall
+      running.each do |label|
+        @formula = label.gsub('homebrew.mxcl.', '')
+        @service = nil # drop cache, forcing to init a service for the new formula
+
+        stop
+      end
     end
 
     # Kill service without plist file by issuing a `launchctl remove` command
