@@ -271,8 +271,16 @@ module ServicesCli
 
     # Stop if loaded, then start again
     def restart
-      stop if target_services.any?(&:loaded?)
-      start
+      services = target_services
+      @act_on_all_services = false
+
+      services.each do |service|
+        @target_services = [service]
+        @single_service = service
+
+        stop if service.loaded?
+        start
+      end
     end
 
     # Start a service
