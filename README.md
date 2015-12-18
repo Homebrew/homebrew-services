@@ -3,7 +3,7 @@ Homebrew Services
 
 Integrates homebrew formulae with MacOS X' `launchctl` manager.
 
-By default plists are installed to `~/Library/LaunchAgents/` and run as the 
+By default plists are installed to `~/Library/LaunchAgents/` and run as the
 current user upon login.  When `brew services` is run as the root user plists
 are installed to `/Library/LaunchDaemons/`, and run as the root user on boot.
 
@@ -40,4 +40,10 @@ $ brew services restart mysql
 ```
 $ brew install dnsmasq
 $ sudo brew services start dnsmasq
+```
+
+### Start/stop/restart all available services ###
+
+```
+$ brew start|stop|restart --all
 ```

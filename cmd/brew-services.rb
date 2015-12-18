@@ -5,11 +5,11 @@
 #
 # ## SYNOPSIS
 #
-# [<sudo>] `brew services` `list`<br>
-# [<sudo>] `brew services` `restart` <formula><br>
-# [<sudo>] `brew services` `start` <formula> [<plist>]<br>
-# [<sudo>] `brew services` `stop` <formula><br>
-# [<sudo>] `brew services` `cleanup`<br>
+# [<sudo>] `brew services` `list`
+# [<sudo>] `brew services` `restart` <formula>
+# [<sudo>] `brew services` `start` <formula> [<plist>]
+# [<sudo>] `brew services` `stop` <formula>
+# [<sudo>] `brew services` `cleanup`
 #
 # ## DESCRIPTION
 #
@@ -83,6 +83,10 @@
 #     $ brew services list
 #     $ sudo brew services list
 #
+# Stop all running services for current user:
+#
+#     $ brew services stop --all
+#
 # ## BUGS
 #
 # `brew-services.rb` might not handle all edge cases, though it tries
@@ -121,20 +125,43 @@ module ServicesCli
       extend(FileUtils)
     end
 
-    # Access current service
-    def service; @service ||= Service.new(Formula.factory(@formula)) if @formula end
+    # Access target services
+    def target_services
+      @target_services ||= begin
+        if act_on_all_services?
+          available_services
+        elsif @formula
+          [single_service]
+        end
+      end
+    end
+
+    # Access a single selected service
+    def single_service
+      return nil if act_on_all_services?
+      @single_service ||= Service.new(Formula.factory(@formula))
+    end
+
+    def act_on_all_services?
+      @act_on_all_services
+    end
+
+    # All available services
+    def available_services
+      Formula.installed.map { |formula| Service.new(formula) }.select(&:plist?)
+    end
 
     # Print usage and `exit(...)` with supplied exit code, if code
     # is set to `false`, then exit is ignored.
     def usage(code = 0)
-      puts "usage: [sudo] #{bin} [--help] <command> [<formula>]"
+      puts "usage: [sudo] #{bin} [--help] <command> [<formula>|--all]"
       puts
       puts "Small wrapper around `launchctl` for supported formulae, commands available:"
       puts "   cleanup Get rid of stale services and unused plists"
       puts "   list    List all services managed by `#{bin}`"
-      puts "   restart Gracefully restart selected service"
-      puts "   start   Start selected service"
-      puts "   stop    Stop selected service"
+      puts "   restart Gracefully restart service(s)"
+      puts "   start   Start service(s)"
+      puts "   stop    Stop service(s)"
       puts
       puts "Options, sudo and paths:"
       puts
@@ -152,55 +179,52 @@ module ServicesCli
       usage if ARGV.empty? || ARGV.include?('help') || ARGV.include?('--help') || ARGV.include?('-h')
 
       # parse arguments
+      @act_on_all_services = !!ARGV.delete('--all')
       @args = ARGV.reject { |arg| arg[0] == 45 }.map { |arg| arg.include?("/") ? arg : arg.downcase } # 45.chr == '-'
       @cmd = @args.shift
       @formula = @args.shift
 
       # dispatch commands and aliases
       case @cmd
-        when 'cleanup', 'clean', 'cl', 'rm' then cleanup
-        when 'list', 'ls' then list
-        when 'restart', 'relaunch', 'reload', 'r' then check and restart
-        when 'start', 'launch', 'load', 's', 'l' then check and start
-        when 'stop', 'unload', 'terminate', 'term', 't', 'u' then check and stop
-        else
-          onoe "Unknown command `#{@cmd}`"
-          usage(1)
+      when 'cleanup', 'clean', 'cl', 'rm' then cleanup
+      when 'list', 'ls' then list
+      when 'restart', 'relaunch', 'reload', 'r' then check and restart
+      when 'start', 'launch', 'load', 's', 'l' then check and start
+      when 'stop', 'unload', 'terminate', 'term', 't', 'u' then check and stop
+      else
+        onoe "Unknown command `#{@cmd}`"
+        usage(1)
       end
     end
 
     # Check if formula has been found
     def check
-      odie("Formula missing, please provide a formula name") unless service
+      odie("Formula(e) missing, please provide a formula name or use --all") unless target_services
       true
     end
 
     # List all available services with status, user, and path to plist file
     def list
-
-      formulae = Formula.installed.
-        map { |formula|  Service.new(formula) }.
-        select { |service|  service.plist?  }.
-        map { |service|
-          formula = {
-            :name => service.formula.name,
-            :status => false,
-            :user => nil,
-            :plist => nil
-          };
-
-          if (ServicesCli.boot_path + "#{service.label}.plist").exist?
-            formula[:status] = true
-            formula[:user] = "root"
-            formula[:plist] = ServicesCli.boot_path + "#{service.label}.plist"
-          elsif (ServicesCli.user_path + "#{service.label}.plist").exist?
-            formula[:status] = true
-            formula[:user] = ServicesCli.user
-            formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
-          end
-
-          formula
+      formulae = available_services.map do |service|
+        formula = {
+          :name => service.formula.name,
+          :status => false,
+          :user => nil,
+          :plist => nil
         }
+
+        if (ServicesCli.boot_path + "#{service.label}.plist").exist?
+          formula[:status] = true
+          formula[:user] = "root"
+          formula[:plist] = ServicesCli.boot_path + "#{service.label}.plist"
+        elsif (ServicesCli.user_path + "#{service.label}.plist").exist?
+          formula[:status] = true
+          formula[:user] = ServicesCli.user
+          formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
+        end
+
+        formula
+      end
 
       if formulae.empty?
         opoo("No services available to control with `#{bin}`")
@@ -247,61 +271,77 @@ module ServicesCli
 
     # Stop if loaded, then start again
     def restart
-      stop if service.loaded?
-      start
+      services = target_services
+      @act_on_all_services = false
+
+      services.each do |service|
+        @target_services = [service]
+        @single_service = service
+
+        stop if service.loaded?
+        start
+      end
     end
 
     # Start a service
     def start
-      if service.loaded?
-        puts "Service `#{service.name}` already started, use `#{bin} restart #{service.name}` to restart."
-        return
-      end
-
       custom_plist = @args.first
-      if custom_plist
-        if custom_plist =~ %r{\Ahttps?://.+}
-          custom_plist = { :url => custom_plist }
-        elsif File.exist?(custom_plist)
-          custom_plist = Pathname.new(custom_plist)
-        else
-          odie "#{custom_plist} is not a url or exising file"
+
+      if single_service
+        if single_service.loaded?
+          puts "Service `#{single_service.name}` already started, use `#{bin} restart #{single_service.name}` to restart."
+          return
         end
+
+        custom_plist = @args.first
+        if custom_plist
+          if custom_plist =~ %r{\Ahttps?://.+}
+            custom_plist = { :url => custom_plist }
+          elsif File.exist?(custom_plist)
+            custom_plist = Pathname.new(custom_plist)
+          else
+            odie "#{custom_plist} is not a url or exising file"
+          end
+        end
+
+        odie "Formula `#{single_service.name}` not installed, #startup_plist not implemented or no plist file found" if !custom_plist && !single_service.plist?
       end
 
-      odie "Formula `#{service.name}` not installed, #startup_plist not implemented or no plist file found" if !custom_plist && !service.plist?
+      target_services.each do |service|
+        temp = Tempfile.new(service.label)
+        temp << service.generate_plist(custom_plist)
+        temp.flush
 
-      temp = Tempfile.new(service.label)
-      temp << service.generate_plist(custom_plist)
-      temp.flush
+        rm service.dest if service.dest.exist?
+        service.dest_dir.mkpath unless service.dest_dir.directory?
+        cp temp.path, service.dest
 
-      rm service.dest if service.dest.exist?
-      service.dest_dir.mkpath unless service.dest_dir.directory?
-      cp temp.path, service.dest
+        # clear tempfile
+        temp.close
 
-      # clear tempfile
-      temp.close
-
-      safe_system launchctl, "load", "-w", service.dest.to_s
-      $?.to_i != 0 ? odie("Failed to start `#{service.name}`") : ohai("Successfully started `#{service.name}` (label: #{service.label})")
+        safe_system launchctl, "load", "-w", service.dest.to_s
+        $?.to_i != 0 ? odie("Failed to start `#{service.name}`") : ohai("Successfully started `#{service.name}` (label: #{service.label})")
+      end
     end
 
     # Stop a service or kill if no plist file available...
     def stop
-      unless service.loaded?
-        rm service.dest if service.dest.exist? # get rid of installed plist anyway, dude
-        odie "Service `#{service.name}` not running, wanna start it? Try `#{bin} start #{service.name}`"
+      if single_service && !single_service.loaded?
+        rm single_service.dest if single_service.dest.exist? # get rid of installed plist anyway, dude
+        odie "Service `#{single_service.name}` not running, wanna start it? Try `#{bin} start #{single_service.name}`"
       end
 
-      if service.dest.exist?
-        puts "Stopping `#{service.name}`... (might take a while)"
-        safe_system launchctl, "unload", "-w", service.dest.to_s
-        $?.to_i != 0 ? odie("Failed to stop `#{service.name}`") : ohai("Successfully stopped `#{service.name}` (label: #{service.label})")
-      else
-        puts "Stopping stale service `#{service.name}`... (might take a while)"
-        kill(service)
+      target_services.select(&:loaded?).each do |service|
+        if service.dest.exist?
+          puts "Stopping `#{service.name}`... (might take a while)"
+          safe_system launchctl, "unload", "-w", service.dest.to_s
+          $?.to_i != 0 ? odie("Failed to stop `#{service.name}`") : ohai("Successfully stopped `#{service.name}` (label: #{service.label})")
+        else
+          puts "Stopping stale service `#{service.name}`... (might take a while)"
+          kill(service)
+        end
+        rm service.dest if service.dest.exist?
       end
-      rm service.dest if service.dest.exist?
     end
 
     # Kill service without plist file by issuing a `launchctl remove` command
