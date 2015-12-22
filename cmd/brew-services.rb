@@ -159,9 +159,9 @@ module ServicesCli
 
       # parse arguments
       act_on_all_services = !!ARGV.delete('--all')
-      @args = ARGV.reject { |arg| arg[0] == 45 }.map { |arg| arg.include?("/") ? arg : arg.downcase } # 45.chr == '-'
-      cmd = @args.shift
-      formula = @args.shift
+      args = ARGV.reject { |arg| arg[0] == 45 }.map { |arg| arg.include?("/") ? arg : arg.downcase } # 45.chr == '-'
+      cmd = args.shift
+      formula = args.shift
 
       target = if act_on_all_services
         available_services
@@ -174,7 +174,7 @@ module ServicesCli
       when 'cleanup', 'clean', 'cl', 'rm' then cleanup
       when 'list', 'ls' then list
       when 'restart', 'relaunch', 'reload', 'r' then check(target) and restart(target)
-      when 'start', 'launch', 'load', 's', 'l' then check(target) and start(target)
+      when 'start', 'launch', 'load', 's', 'l' then check(target) and start(target, args.first)
       when 'stop', 'unload', 'terminate', 'term', 't', 'u' then check(target) and stop(target)
       else
         onoe "Unknown command `#{cmd}`"
@@ -263,16 +263,13 @@ module ServicesCli
     end
 
     # Start a service
-    def start(target)
-      custom_plist = @args.first
-
+    def start(target, custom_plist = nil)
       if target.is_a?(Service)
         if target.loaded?
           puts "Service `#{target.name}` already started, use `#{bin} restart #{target.name}` to restart."
           return
         end
 
-        custom_plist = @args.first
         if custom_plist
           if custom_plist =~ %r{\Ahttps?://.+}
             custom_plist = { :url => custom_plist }
