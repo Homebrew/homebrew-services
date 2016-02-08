@@ -193,17 +193,17 @@ module ServicesCli
       formulae = available_services.map do |service|
         formula = {
           :name => service.formula.name,
-          :status => false,
+          :started => false,
           :user => nil,
           :plist => nil
         }
 
-        if (ServicesCli.boot_path + "#{service.label}.plist").exist?
-          formula[:status] = true
+        if service.started?(as: :root)
+          formula[:started] = true
           formula[:user] = "root"
           formula[:plist] = ServicesCli.boot_path + "#{service.label}.plist"
-        elsif (ServicesCli.user_path + "#{service.label}.plist").exist?
-          formula[:status] = true
+        elsif service.started?(as: :user)
+          formula[:started] = true
           formula[:user] = ServicesCli.user
           formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
         end
@@ -221,7 +221,7 @@ module ServicesCli
 
       puts "#{Tty.white}%-#{longest_name}.#{longest_name}s %-7.7s %-#{longest_user}.#{longest_user}s %s#{Tty.reset}" % ["Name", "Status", "User", "Plist"]
       formulae.each do |formula|
-        puts "%-#{longest_name}.#{longest_name}s %s %-#{longest_user}.#{longest_user}s %s" % [formula[:name], formula[:status] ? "#{Tty.green}started#{Tty.reset}" : "stopped", formula[:user], formula[:plist]]
+        puts "%-#{longest_name}.#{longest_name}s %s %-#{longest_user}.#{longest_user}s %s" % [formula[:name], formula[:started] ? "#{Tty.green}started#{Tty.reset}" : "stopped", formula[:user], formula[:plist]]
       end
     end
 
