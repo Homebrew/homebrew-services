@@ -13,29 +13,29 @@
 #
 # ## DESCRIPTION
 #
-# Integrates homebrew formulae with MacOS X' `launchctl` manager. Services
-# can either be added to `/Library/LaunchDaemons` or `~/Library/LaunchAgents`.
-# Basically items added to `/Library/LaunchDaemons` are started at boot,
-# those in `~/Library/LaunchAgents` at login.
+# Integrates Homebrew formulae with OS X's `launchctl` manager. Services can be
+# added to either `/Library/LaunchDaemons` or `~/Library/LaunchAgents`.
+# Basically, items in `/Library/LaunchDaemons` are started at boot, while those
+# in `~/Library/LaunchAgents` are started at login.
 #
-# When started with `sudo` it operates on `/Library/LaunchDaemons`, else
-# in the user space.
+# When started with `sudo`, it operates on `/Library/LaunchDaemons`; otherwise,
+# it operates on `~/Library/LaunchAgents`.
 #
-# Basically on `start` the plist file is generated and written to a `Tempfile`,
-# then copied to the launch path (existing plists are overwritten).
+# On `start` the plist file is generated and written to a `Tempfile`, and then
+# copied to the launch path (existing plists are overwritten).
 #
 # ## OPTIONS
 #
 # To access everything quickly, some aliases have been added:
 #
 #  * `rm`:
-#    Shortcut for `cleanup`, because that's basically whats being done.
+#    Shortcut for `cleanup`, because that's basically what's being done.
 #
 #  * `ls`:
-#    Because `list` is too much to type :)
+#    Because `list` is too much to type. :)
 #
 #  * `reload', 'r':
-#    Alias for `restart`, which gracefully restarts selected service.
+#    Alias for `restart`, which gracefully restarts the selected service.
 #
 #  * `load`, `s`:
 #    Alias for `start`, guess what it does...
@@ -45,52 +45,52 @@
 #
 # ## SYNTAX
 #
-# Several existing formulae (like mysql, nginx) already write custom plist
-# files to the formulae prefix. Most of these implement `#startup_plist`
-# which then in turn returns a neat-o plist file as string.
+# Several existing formulae (like mysql, nginx) already write a custom plist
+# file to the formulae prefix. Most of these implement `#startup_plist`, which
+# then, in turn, returns a neato plist file as a string.
 #
-# `brew services` operates on `#startup_plist` as well and requires
-# supporting formulae to implement it. This method should either string
-# containing the generated XML file, or return a `Pathname` instance which
-# points to a plist template, or a hash like:
+# `brew services` operates on `#startup_plist` as well, and requires supporting
+# formulae to implement it. This method should either return a string containing
+# the generated XML file, or return a `Pathname` instance pointing to a plist
+# template or to a hash like this:
 #
 #    { :url => "https://gist.github.com/raw/534777/63c4698872aaef11fe6e6c0c5514f35fd1b1687b/nginx.plist.xml" }
 #
-# Some simple template parsing is performed, all variables like `{{name}}` are
-# replaced by basically doing:
+# Some simple template parsing is performed. All variables like `{{name}}` are
+# replaced by basically doing the following:
 # `formula.send('name').to_s if formula.respond_to?('name')`, a bit like
-# mustache. So any variable in the `Formula` is available as template
-# variable, like `{{var}}`, `{{bin}}` usw.
+# mustache. So any variable in the `Formula` is available as a template
+# variable, like `{{var}}`, `{{bin}}`, and `{{usr}}`.
 #
 # ## EXAMPLES
 #
-# Install and start service mysql at boot:
+# Install and start the service "mysql" at boot:
 #
 #     $ brew install mysql
 #     $ sudo brew services start mysql
 #
-# Stop service mysql (when launched at boot):
+# Stop the service "mysql" (after it was launched at boot):
 #
 #     $ sudo brew services stop mysql
 #
-# Start memcached at login:
+# Start the service "memcached" at login:
 #
 #     $ brew install memcached
 #     $ brew services start memcached
 #
-# List all running services for current user, and root:
+# List all running services for the current user and then for root:
 #
 #     $ brew services list
 #     $ sudo brew services list
 #
-# Stop all running services for current user:
+# Stop all running services for the current user:
 #
 #     $ brew services stop --all
 #
 # ## BUGS
 #
-# `brew-services.rb` might not handle all edge cases, though it tries
-# to fix problems by running `brew services cleanup`.
+# `brew-services.rb` might not handle all edge cases, but it will try to fix
+# problems if you run `brew services cleanup`.
 #
 module ServicesCli
   class << self
@@ -100,10 +100,10 @@ module ServicesCli
     # Path to launchctl binary.
     def launchctl; which("launchctl") end
 
-    # Wohoo, we are root dude!
+    # Woohoo, we are root dude!
     def root?; Process.uid == 0 end
 
-    # Current user, i.e. owner of `HOMEBREW_CELLAR`.
+    # Current user, i.e., owner of `HOMEBREW_CELLAR`.
     def user; @user ||= %x{/usr/bin/stat -f '%Su' #{HOMEBREW_CELLAR} 2>/dev/null}.chomp || %x{/usr/bin/whoami}.chomp end
 
     # Run at boot.
@@ -112,15 +112,15 @@ module ServicesCli
     # Run at login.
     def user_path; Pathname.new(ENV['HOME'] + '/Library/LaunchAgents') end
 
-    # If root returns `boot_path` else `user_path`.
+    # If root, return `boot_path`, else return `user_path`.
     def path; root? ? boot_path : user_path end
 
-    # Find all currently running services via launchctl list
+    # Find all currently running services via launchctl list.
     def running; %x{#{launchctl} list | grep homebrew.mxcl}.chomp.split("\n").map { |svc| $1 if svc =~ /(homebrew\.mxcl\..+)\z/ }.compact end
 
-    # Check if running as homebrew and load required libraries et al.
+    # Check if running as Homebrew and load required libraries, et al.
     def homebrew!
-      abort("Runtime error: homebrew is required, please start via `#{bin} ...`") unless defined?(HOMEBREW_LIBRARY_PATH)
+      abort("Runtime error: Homebrew is required. Please start via `#{bin} ...`") unless defined?(HOMEBREW_LIBRARY_PATH)
       %w{fileutils pathname tempfile formula utils}.each { |req| require(req) }
       extend(FileUtils)
     end
@@ -130,7 +130,7 @@ module ServicesCli
       Formula.installed.map { |formula| Service.new(formula) }.select(&:plist?)
     end
 
-    # Print usage and `exit(...)` with supplied exit code, if code
+    # Print usage and `exit(...)` with supplied exit code. If code
     # is set to `false`, then exit is ignored.
     def usage(code = 0)
       puts "usage: [sudo] #{bin} [--help] <command> [<formula>|--all]"
@@ -157,7 +157,7 @@ module ServicesCli
       homebrew!
       usage if ARGV.empty? || ARGV.include?('help') || ARGV.include?('--help') || ARGV.include?('-h')
 
-      # parse arguments
+      # Parse arguments.
       act_on_all_services = !!ARGV.delete('--all')
       args = ARGV.reject { |arg| arg[0] == 45 }.map { |arg| arg.include?("/") ? arg : arg.downcase } # 45.chr == '-'
       cmd = args.shift
@@ -169,7 +169,7 @@ module ServicesCli
         Service.new(Formula.factory(formula))
       end
 
-      # dispatch commands and aliases
+      # Dispatch commands and aliases.
       case cmd
       when 'cleanup', 'clean', 'cl', 'rm' then cleanup
       when 'list', 'ls' then list
@@ -182,13 +182,13 @@ module ServicesCli
       end
     end
 
-    # Check if formula has been found
+    # Check if formula has been found.
     def check(target)
       odie("Formula(e) missing, please provide a formula name or use --all") unless target
       true
     end
 
-    # List all available services with status, user, and path to plist file
+    # List all available services with status, user, and path to the plist file.
     def list
       formulae = available_services.map do |service|
         formula = {
@@ -225,11 +225,11 @@ module ServicesCli
       end
     end
 
-    # Kill services without plist file and remove unused plists
+    # Kill services that don't have a plist file, and remove unused plist files.
     def cleanup
       cleaned = []
 
-      # 1. kill services which have no plist file
+      # 1. Kill services that don't have a plist file.
       running.each do |label|
         if svc = Service.from(label)
           if !svc.dest.file?
@@ -242,7 +242,7 @@ module ServicesCli
         end
       end
 
-      # 2. remove unused plist files
+      # 2. Remove unused plist files.
       Dir[path + 'homebrew.mxcl.*.plist'].each do |file|
         unless running.include?(File.basename(file).sub(/\.plist$/i, ''))
           puts "Removing unused plist #{file}"
@@ -254,7 +254,7 @@ module ServicesCli
       puts "All #{root? ? 'root' : 'user-space'} services OK, nothing cleaned..." if cleaned.empty?
     end
 
-    # Stop if loaded, then start again
+    # Stop if loaded, then start again.
     def restart(target)
       Array(target).each do |service|
         stop(service) if service.loaded?
@@ -262,7 +262,7 @@ module ServicesCli
       end
     end
 
-    # Start a service
+    # Start a service.
     def start(target, custom_plist = nil)
       if target.is_a?(Service)
         if target.loaded?
@@ -276,7 +276,7 @@ module ServicesCli
           elsif File.exist?(custom_plist)
             custom_plist = Pathname.new(custom_plist)
           else
-            odie "#{custom_plist} is not a url or exising file"
+            odie "#{custom_plist} is not a url or existing file"
           end
         end
 
@@ -292,7 +292,7 @@ module ServicesCli
         service.dest_dir.mkpath unless service.dest_dir.directory?
         cp temp.path, service.dest
 
-        # clear tempfile
+        # Clear tempfile.
         temp.close
 
         safe_system launchctl, "load", "-w", service.dest.to_s
@@ -300,7 +300,7 @@ module ServicesCli
       end
     end
 
-    # Stop a service or kill if no plist file available...
+    # Stop a service, or kill it if no plist file is available.
     def stop(target)
       if target.is_a?(Service) && !target.loaded?
         rm target.dest if target.dest.exist? # get rid of installed plist anyway, dude
@@ -320,7 +320,7 @@ module ServicesCli
       end
     end
 
-    # Kill service without plist file by issuing a `launchctl remove` command
+    # Kill a service that has no plist file by issuing `launchctl remove`.
     def kill(svc)
       safe_system launchctl, "remove", svc.label
       odie("Failed to remove `#{svc.name}`, try again?") unless $?.to_i == 0
@@ -333,10 +333,10 @@ module ServicesCli
   end
 end
 
-# Wrapper for a formula to handle service related stuff like parsing
-# and generating the plist file.
+# Wrapper for a formula to handle service-related stuff like parsing and
+# generating the plist file.
 class Service
-  # Access the `Formula` instance
+  # Access the `Formula` instance.
   attr_reader :formula
 
   # Create a new `Service` instance from either a path or label.
@@ -345,31 +345,31 @@ class Service
     new(Formula.factory($1)) rescue nil
   end
 
-  # Initialize new `Service` instance with supplied formula.
+  # Initialize a new `Service` instance with supplied formula.
   def initialize(formula); @formula = formula end
 
   # Delegate access to `formula.name`.
   def name; @name ||= formula.name end
 
-  # Label delegates to formula.plist_name, e.g `homebrew.mxcl.<formula>`.
+  # Label delegates with formula.plist_name (e.g., `homebrew.mxcl.<formula>`).
   def label; @label ||= formula.plist_name end
 
-  # Path to a static plist file, this is always `homebrew.mxcl.<formula>.plist`.
+  # Path to a static plist file. This is always `homebrew.mxcl.<formula>.plist`.
   def plist; @plist ||= formula.opt_prefix + "#{label}.plist" end
 
-  # Path to destination plist directory, if run as root it's `boot_path`, else `user_path`.
+  # Path to destination plist directory. If run as root, it's `boot_path`, else `user_path`.
   def dest_dir; (ServicesCli.root? ? ServicesCli.boot_path : ServicesCli.user_path) end
 
-  # Path to destination plist, if run as root it's in `boot_path`, else `user_path`.
+  # Path to destination plist. If run as root, it's in `boot_path`, else `user_path`.
   def dest; dest_dir + "#{label}.plist" end
 
   # Returns `true` if any version of the formula is installed.
   def installed?; formula.installed? || ((dir = formula.opt_prefix).directory? && dir.children.length > 0) end
 
-  # Returns `true` if formula implements #startup_plist or file exists.
+  # Returns `true` if the formula implements #startup_plist or the plist file exists.
   def plist?; installed? && (plist.file? || !formula.plist.nil? || !formula.startup_plist.nil?) end
 
-  # Returns `true` if service is loaded, else false.
+  # Returns `true` if the service is loaded, else false.
   def loaded?; %x{#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null}.chomp =~ /#{label}\z/ end
 
   # Get current PID of daemon process from launchctl.
@@ -391,7 +391,7 @@ class Service
       odie "Could not read the plist for `#{name}`!"
     end
 
-    # replace "template" variables and ensure label is always, always homebrew.mxcl.<formula>
+    # Replace "template" variables and ensure label is always, always homebrew.mxcl.<formula>
     data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) { |m| formula.send($1).to_s if formula.respond_to?($1) }.
               gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
 
@@ -419,6 +419,6 @@ class Service
   end
 end
 
-# Start the cli dispatch stuff.
+# Start the CLI dispatch stuff.
 #
 ServicesCli.run!
