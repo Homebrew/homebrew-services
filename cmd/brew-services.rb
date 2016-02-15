@@ -174,7 +174,7 @@ module ServicesCli
       usage if ARGV.empty? || ARGV.include?("help") || ARGV.include?("--help") || ARGV.include?("-h")
 
       # Parse arguments.
-      act_on_all_services = !!ARGV.delete("--all")
+      act_on_all_services = !ARGV.delete("--all").nil?
       args = ARGV.reject { |arg| arg[0] == 45 }.map { |arg| arg.include?("/") ? arg : arg.downcase } # 45.chr == '-'
       cmd = args.shift
       formula = args.shift
@@ -187,11 +187,11 @@ module ServicesCli
 
       # Dispatch commands and aliases.
       case cmd
-      when "cleanup", "clean", 'cl', 'rm' then cleanup
+      when "cleanup", "clean", "cl", "rm" then cleanup
       when "list", "ls" then list
-      when "restart", "relaunch", 'reload', 'r' then check(target) and restart(target)
-      when "start", "launch", 'load', 's', 'l' then check(target) and start(target, args.first)
-      when "stop", "unload", 'terminate', 'term', 't', 'u' then check(target) and stop(target)
+      when "restart", "relaunch", "reload", "r" then check(target) and restart(target)
+      when "start", "launch", "load", "s", "l" then check(target) and start(target, args.first)
+      when "stop", "unload", "terminate", "term", "t", "u" then check(target) and stop(target)
       else
         onoe "Unknown command `#{cmd}`"
         usage(1)
@@ -385,8 +385,8 @@ class Service
   end
 
   # Path to destination plist directory. If run as root, it's `boot_path`, else `user_path`.
-  def dest_dir; (
-    ServicesCli.root? ? ServicesCli.boot_path : ServicesCli.user_path)
+  def dest_dir
+    ServicesCli.root? ? ServicesCli.boot_path : ServicesCli.user_path
   end
 
   # Path to destination plist. If run as root, it's in `boot_path`, else `user_path`.
@@ -396,7 +396,7 @@ class Service
 
   # Returns `true` if any version of the formula is installed.
   def installed?
-    formula.installed? || ((dir = formula.opt_prefix).directory? && dir.children.length > 0)
+    formula.installed? || ((dir = formula.opt_prefix).directory? && !dir.children.empty?)
   end
 
   # Returns `true` if the formula implements #startup_plist or the plist file exists.
@@ -429,8 +429,7 @@ class Service
     end
 
     # Replace "template" variables and ensure label is always, always homebrew.mxcl.<formula>
-    data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) { |_m| formula.send($1).to_s if formula.respond_to?($1) }.
-           gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
+    data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) { |_m| formula.send($1).to_s if formula.respond_to?($1) }.gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
 
     # Force fix UserName
     if !ServicesCli.root?
