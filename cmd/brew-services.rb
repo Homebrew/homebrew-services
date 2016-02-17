@@ -305,7 +305,7 @@ module ServicesCli
       if target.is_a?(Service) && !target.loaded?
         rm target.dest if target.dest.exist? # get rid of installed plist anyway, dude
         if target.started?
-          odie "Service `#{target.name}` is started as `#{target.started_as}`. Try `#{"sudo " if ServicesCli.root?}#{bin} stop #{target.name}`"
+          odie "Service `#{target.name}` is started as `#{target.started_as}`. Try `#{"sudo " unless ServicesCli.root?}#{bin} stop #{target.name}`"
         else
           odie "Service `#{target.name}` is not started."
         end
