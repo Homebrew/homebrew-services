@@ -198,11 +198,11 @@ module ServicesCli
           :plist => nil
         }
 
-        if service.started?(as: :root)
+        if service.started?(:as => :root)
           formula[:started] = true
           formula[:user] = "root"
           formula[:plist] = ServicesCli.boot_path + "#{service.label}.plist"
-        elsif service.started?(as: :user)
+        elsif service.started?(:as => :user)
           formula[:started] = true
           formula[:user] = ServicesCli.user
           formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
@@ -377,20 +377,20 @@ class Service
   def loaded?; %x{#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null}.chomp =~ /#{label}\z/ end
 
   # Returns `true` if service is started (.plist is present in LaunchDaemon or LaunchAgent path), else `false`
-  # Accepts Hash option `as:` with values `:root` for LaunchDaemon path or `:user` for LaunchAgent path.
-  def started?(opts = {as: false})
+  # Accepts Hash option `:as` with values `:root` for LaunchDaemon path or `:user` for LaunchAgent path.
+  def started?(opts = {:as => false})
     if opts[:as] && opts[:as] == :root
       (ServicesCli.boot_path + "#{label}.plist").exist?
     elsif opts[:as] && opts[:as] == :user
       (ServicesCli.user_path + "#{label}.plist").exist?
     else
-      started?(as: :root) || started?(as: :user)
+      started?(:as => :root) || started?(:as => :user)
     end
   end
 
   def started_as
-    return "root" if started?(as: :root)
-    return ServicesCli.user if started?(as: :user)
+    return "root" if started?(:as => :root)
+    return ServicesCli.user if started?(:as => :user)
     nil
   end
 
