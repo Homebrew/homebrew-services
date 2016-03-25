@@ -418,7 +418,7 @@ class Service
               gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
 
     # Force fix UserName
-    if !ServicesCli.root?
+    if ServicesCli.root?
       if data =~ %r{<key>UserName</key>}
         # Replace existing UserName value with current user
         data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, '\1' + ServicesCli.user + '\2')
@@ -427,7 +427,7 @@ class Service
         data = data.gsub(%r{(\s*</dict>\s*</plist>)}, "\n    <key>UserName</key>\n    <string>" + ServicesCli.user + "</string>\\1")
       end
     elsif data =~ %r{<key>UserName</key>}
-      # Always remove UserName key entirely if running as root
+      # Always remove UserName key entirely if not running as root
       data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, '')
     end
 
