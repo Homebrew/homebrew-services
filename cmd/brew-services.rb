@@ -417,8 +417,17 @@ class Service
     data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) { |m| formula.send($1).to_s if formula.respond_to?($1) }.
               gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
 
-    # Scrub UserName if running as root
-    if ServicesCli.root? && data =~ %r{<key>UserName</key>}
+    # Force fix UserName
+    if !ServicesCli.root?
+      if data =~ %r{<key>UserName</key>}
+        # Replace existing UserName value with current user
+        data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, '\1' + ServicesCli.user + '\2')
+      else
+        # Add UserName key and value to end of plist if it doesn't already exist
+        data = data.gsub(%r{(\s*</dict>\s*</plist>)}, "\n    <key>UserName</key>\n    <string>" + ServicesCli.user + "</string>\\1")
+      end
+    elsif data =~ %r{<key>UserName</key>}
+      # Always remove UserName key entirely if running as root
       data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, '')
     end
 
