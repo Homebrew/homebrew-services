@@ -44,8 +44,21 @@ $ brew install dnsmasq
 $ sudo brew services start dnsmasq
 ```
 
+### What services might you have available? Let's find out! ###
+
+```
+$ brew services list
+Name       Status  User Plist
+mysql      stopped
+postgresql stopped
+rethinkdb  started xxx  /Users/xxx/Library/LaunchAgents/homebrew.mxcl.rethinkdb.plist
+```
+
+(This is only an example of output; your output will very likely deviate from the above.)
+
+
 ### Start/stop/restart all available services ###
 
 ```
-$ brew start|stop|restart --all
+$ brew services start|stop|restart --all
 ```
