@@ -48,14 +48,7 @@ $ sudo brew services start dnsmasq
 
 ```
 $ brew services list
-Name       Status  User Plist
-mysql      stopped
-postgresql stopped
-rethinkdb  started xxx  /Users/xxx/Library/LaunchAgents/homebrew.mxcl.rethinkdb.plist
 ```
-
-(This is only an example of output; your output will very likely deviate from the above.)
-
 
 ### Start/stop/restart all available services ###
 
