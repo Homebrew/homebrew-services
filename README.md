@@ -44,7 +44,7 @@ $ brew install dnsmasq
 $ sudo brew services start dnsmasq
 ```
 
-### What services might you have available? Let's find out! ###
+### List all services managed by `brew services` ###
 
 ```
 $ brew services list
