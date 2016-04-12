@@ -44,8 +44,14 @@ $ brew install dnsmasq
 $ sudo brew services start dnsmasq
 ```
 
+### List all services managed by `brew services` ###
+
+```
+$ brew services list
+```
+
 ### Start/stop/restart all available services ###
 
 ```
-$ brew start|stop|restart --all
+$ brew services start|stop|restart --all
 ```
