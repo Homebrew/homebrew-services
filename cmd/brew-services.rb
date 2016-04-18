@@ -92,6 +92,9 @@
 # `brew-services.rb` might not handle all edge cases, but it will try to fix
 # problems if you run `brew services cleanup`.
 #
+
+require 'optparse'
+
 module ServicesCli
   class << self
     # Binary name.
@@ -133,21 +136,26 @@ module ServicesCli
     # Print usage and `exit(...)` with supplied exit code. If code
     # is set to `false`, then exit is ignored.
     def usage(code = 0)
-      puts "usage: [sudo] #{bin} [--help] <command> [<formula>|--all]"
-      puts
-      puts "Small wrapper around `launchctl` for supported formulae, commands available:"
-      puts "   cleanup Get rid of stale services and unused plists"
-      puts "   list    List all services managed by `#{bin}`"
-      puts "   restart Gracefully restart service(s)"
-      puts "   start   Start service(s)"
-      puts "   stop    Stop service(s)"
-      puts
-      puts "Options, sudo and paths:"
-      puts
-      puts "  sudo   When run as root, operates on #{boot_path} (run at boot!)"
-      puts "  Run at boot:  #{boot_path}"
-      puts "  Run at login: #{user_path}"
-      puts
+      puts <<-EOS.undent
+        Usage: [sudo] #{bin} [--help] [options] <command> [<formula>|--all]
+
+        Small wrapper around `launchctl` for supported formulae, commands available:
+          cleanup  Get rid of stale services and unused plists
+          list     List all services managed by `#{bin}`
+          restart  Gracefully restart service(s)
+          start    Start service(s)
+          stop     Stop service(s)
+
+          By default services are installed as LaunchAgents and run on login.
+          When `#{bin}` is run as root, services are installed as LaunchDaemons and run
+          on boot.
+
+        Options:
+
+          --set-user  When starting or restarting a service, modify the plist to run as
+                      the specified user.  This option is only available when run as
+                      root.
+      EOS
       exit(code) unless code == false
       true
     end
@@ -155,10 +163,24 @@ module ServicesCli
     # Run and start the command loop.
     def run!
       homebrew!
-      usage if ARGV.empty? || ARGV.include?('help') || ARGV.include?('--help') || ARGV.include?('-h')
 
-      # Parse arguments.
-      act_on_all_services = !!ARGV.delete('--all')
+      act_on_all_services = false
+      set_user = nil
+
+      OptionParser.new { |opts|
+        opts.on('-h', '--help') do
+          usage
+        end
+
+        opts.on('-a', '--all') do
+          act_on_all_services = true
+        end
+
+        opts.on('-u', '--set-user USER') do |arg|
+          set_user = arg
+        end
+      }.parse!
+
       args = ARGV.reject { |arg| arg[0] == 45 }.map { |arg| arg.include?("/") ? arg : arg.downcase } # 45.chr == '-'
       cmd = args.shift
       formula = args.shift
@@ -171,10 +193,11 @@ module ServicesCli
 
       # Dispatch commands and aliases.
       case cmd
+      when 'help' then usage
       when 'cleanup', 'clean', 'cl', 'rm' then cleanup
       when 'list', 'ls' then list
-      when 'restart', 'relaunch', 'reload', 'r' then check(target) and restart(target)
-      when 'start', 'launch', 'load', 's', 'l' then check(target) and start(target, args.first)
+      when 'restart', 'relaunch', 'reload', 'r' then check(target) and restart(target, set_user)
+      when 'start', 'launch', 'load', 's', 'l' then check(target) and start(target, args.first, set_user)
       when 'stop', 'unload', 'terminate', 'term', 't', 'u' then check(target) and stop(target)
       else
         onoe "Unknown command `#{cmd}`"
@@ -255,15 +278,15 @@ module ServicesCli
     end
 
     # Stop if loaded, then start again.
-    def restart(target)
+    def restart(target, set_user = nil)
       Array(target).each do |service|
         stop(service) if service.loaded?
-        start(service)
+        start(service, nil, set_user)
       end
     end
 
     # Start a service.
-    def start(target, custom_plist = nil)
+    def start(target, custom_plist = nil, set_user = nil)
       if target.is_a?(Service)
         if target.loaded?
           puts "Service `#{target.name}` already started, use `#{bin} restart #{target.name}` to restart."
@@ -285,7 +308,7 @@ module ServicesCli
 
       Array(target).each do |service|
         temp = Tempfile.new(service.label)
-        temp << service.generate_plist(custom_plist)
+        temp << service.generate_plist(custom_plist, set_user)
         temp.flush
 
         rm service.dest if service.dest.exist?
@@ -401,7 +424,7 @@ class Service
   end
 
   # Generate that plist file, dude.
-  def generate_plist(data = nil)
+  def generate_plist(data = nil, set_user = nil)
     data ||= plist.file? ? plist : formula.startup_plist
 
     if data.respond_to?(:file?) && data.file?
@@ -417,18 +440,19 @@ class Service
     data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) { |m| formula.send($1).to_s if formula.respond_to?($1) }.
               gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
 
-    # Force fix UserName
-    if !ServicesCli.root?
-      if data =~ %r{<key>UserName</key>}
-        # Replace existing UserName value with current user
-        data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, '\1' + ServicesCli.user + '\2')
+    # Override plist UserName
+    if !set_user.nil?
+      if !ServicesCli.root?
+        opoo "--set-user has no effect for LaunchAgents"
       else
-        # Add UserName key and value to end of plist if it doesn't already exist
-        data = data.gsub(%r{(\s*</dict>\s*</plist>)}, "\n    <key>UserName</key>\n    <string>" + ServicesCli.user + "</string>\\1")
+        if data =~ %r{<key>UserName</key>}
+          # Replace existing UserName value
+          data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, '\1' + set_user + '\2')
+        else
+          # Add UserName key and value to end of plist if it doesn't already exist
+          data = data.gsub(%r{(\s*</dict>\s*</plist>)}, "\n    <key>UserName</key>\n    <string>" + set_user + "</string>\\1")
+        end
       end
-    elsif data =~ %r{<key>UserName</key>}
-      # Always remove UserName key entirely if running as root
-      data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, '')
     end
 
     if ARGV.verbose?
