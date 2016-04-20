@@ -157,6 +157,8 @@ module ServicesCli
       homebrew!
       usage if ARGV.empty? || ARGV.include?('help') || ARGV.include?('--help') || ARGV.include?('-h')
 
+      odie "brew services cannot run under tmux!" if ENV["TMUX"]
+
       # Parse arguments.
       act_on_all_services = !!ARGV.delete('--all')
       args = ARGV.reject { |arg| arg[0] == 45 }.map { |arg| arg.include?("/") ? arg : arg.downcase } # 45.chr == '-'
