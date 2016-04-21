@@ -95,33 +95,49 @@
 module ServicesCli
   class << self
     # Binary name.
-    def bin; "brew services" end
+    def bin
+      "brew services"
+    end
 
     # Path to launchctl binary.
-    def launchctl; which("launchctl") end
+    def launchctl
+      which("launchctl")
+    end
 
     # Woohoo, we are root dude!
-    def root?; Process.uid == 0 end
+    def root?
+      Process.uid == 0
+    end
 
     # Current user, i.e., owner of `HOMEBREW_CELLAR`.
-    def user; @user ||= %x{/usr/bin/stat -f '%Su' #{HOMEBREW_CELLAR} 2>/dev/null}.chomp || %x{/usr/bin/whoami}.chomp end
+    def user
+      @user ||= `/usr/bin/stat -f '%Su' #{HOMEBREW_CELLAR} 2>/dev/null`.chomp || `/usr/bin/whoami`.chomp
+    end
 
     # Run at boot.
-    def boot_path; Pathname.new("/Library/LaunchDaemons") end
+    def boot_path
+      Pathname.new("/Library/LaunchDaemons")
+    end
 
     # Run at login.
-    def user_path; Pathname.new(ENV['HOME'] + '/Library/LaunchAgents') end
+    def user_path
+      Pathname.new(ENV["HOME"] + "/Library/LaunchAgents")
+    end
 
     # If root, return `boot_path`, else return `user_path`.
-    def path; root? ? boot_path : user_path end
+    def path
+      root? ? boot_path : user_path
+    end
 
     # Find all currently running services via launchctl list.
-    def running; %x{#{launchctl} list | grep homebrew.mxcl}.chomp.split("\n").map { |svc| $1 if svc =~ /(homebrew\.mxcl\..+)\z/ }.compact end
+    def running
+      `#{launchctl} list | grep homebrew.mxcl`.chomp.split("\n").map { |svc| $1 if svc =~ /(homebrew\.mxcl\..+)\z/ }.compact
+    end
 
     # Check if running as Homebrew and load required libraries, et al.
     def homebrew!
       abort("Runtime error: Homebrew is required. Please start via `#{bin} ...`") unless defined?(HOMEBREW_LIBRARY_PATH)
-      %w{fileutils pathname tempfile formula utils}.each { |req| require(req) }
+      %w[fileutils pathname tempfile formula utils].each { |req| require(req) }
       extend(FileUtils)
     end
 
@@ -155,12 +171,12 @@ module ServicesCli
     # Run and start the command loop.
     def run!
       homebrew!
-      usage if ARGV.empty? || ARGV.include?('help') || ARGV.include?('--help') || ARGV.include?('-h')
+      usage if ARGV.empty? || ARGV.include?("help") || ARGV.include?("--help") || ARGV.include?("-h")
 
       odie "brew services cannot run under tmux!" if ENV["TMUX"]
 
       # Parse arguments.
-      act_on_all_services = !!ARGV.delete('--all')
+      act_on_all_services = !ARGV.delete("--all").nil?
       args = ARGV.reject { |arg| arg[0] == 45 }.map { |arg| arg.include?("/") ? arg : arg.downcase } # 45.chr == '-'
       cmd = args.shift
       formula = args.shift
@@ -173,11 +189,11 @@ module ServicesCli
 
       # Dispatch commands and aliases.
       case cmd
-      when 'cleanup', 'clean', 'cl', 'rm' then cleanup
-      when 'list', 'ls' then list
-      when 'restart', 'relaunch', 'reload', 'r' then check(target) and restart(target)
-      when 'start', 'launch', 'load', 's', 'l' then check(target) and start(target, args.first)
-      when 'stop', 'unload', 'terminate', 'term', 't', 'u' then check(target) and stop(target)
+      when "cleanup", "clean", "cl", "rm" then cleanup
+      when "list", "ls" then list
+      when "restart", "relaunch", "reload", "r" then check(target) and restart(target)
+      when "start", "launch", "load", "s", "l" then check(target) and start(target, args.first)
+      when "stop", "unload", "terminate", "term", "t", "u" then check(target) and stop(target)
       else
         onoe "Unknown command `#{cmd}`"
         usage(1)
@@ -197,7 +213,7 @@ module ServicesCli
           :name => service.formula.name,
           :started => false,
           :user => nil,
-          :plist => nil
+          :plist => nil,
         }
 
         if service.started?(:as => :root)
@@ -218,8 +234,8 @@ module ServicesCli
         return
       end
 
-      longest_name = [formulae.max_by{ |formula|  formula[:name].length }[:name].length, 4].max
-      longest_user = [formulae.map{ |formula|  formula[:user].nil? ? 4 : formula[:user].length }.max, 4].max
+      longest_name = [formulae.max_by { |formula| formula[:name].length }[:name].length, 4].max
+      longest_user = [formulae.map { |formula| formula[:user].nil? ? 4 : formula[:user].length }.max, 4].max
 
       puts "#{Tty.white}%-#{longest_name}.#{longest_name}s %-7.7s %-#{longest_user}.#{longest_user}s %s#{Tty.reset}" % ["Name", "Status", "User", "Plist"]
       formulae.each do |formula|
@@ -234,7 +250,7 @@ module ServicesCli
       # 1. Kill services that don't have a plist file.
       running.each do |label|
         if svc = Service.from(label)
-          if !svc.dest.file?
+          unless svc.dest.file?
             puts "%-15.15s #{Tty.white}stale#{Tty.reset} => killing service..." % svc.name
             kill(svc)
             cleaned << label
@@ -245,15 +261,14 @@ module ServicesCli
       end
 
       # 2. Remove unused plist files.
-      Dir[path + 'homebrew.mxcl.*.plist'].each do |file|
-        unless running.include?(File.basename(file).sub(/\.plist$/i, ''))
-          puts "Removing unused plist #{file}"
-          rm file
-          cleaned << file
-        end
+      Dir[path + "homebrew.mxcl.*.plist"].each do |file|
+        next if running.include?(File.basename(file).sub(/\.plist$/i, ""))
+        puts "Removing unused plist #{file}"
+        rm file
+        cleaned << file
       end
 
-      puts "All #{root? ? 'root' : 'user-space'} services OK, nothing cleaned..." if cleaned.empty?
+      puts "All #{root? ? "root" : "user-space"} services OK, nothing cleaned..." if cleaned.empty?
     end
 
     # Stop if loaded, then start again.
@@ -348,35 +363,57 @@ class Service
   # Create a new `Service` instance from either a path or label.
   def self.from(path_or_label)
     return nil unless path_or_label =~ /homebrew\.mxcl\.([^\.]+)(\.plist)?\z/
-    new(Formula.factory($1)) rescue nil
+    begin
+      new(Formula.factory($1))
+    rescue
+      nil
+    end
   end
 
   # Initialize a new `Service` instance with supplied formula.
-  def initialize(formula); @formula = formula end
+  def initialize(formula)
+    @formula = formula
+  end
 
   # Delegate access to `formula.name`.
-  def name; @name ||= formula.name end
+  def name
+    @name ||= formula.name
+  end
 
   # Label delegates with formula.plist_name (e.g., `homebrew.mxcl.<formula>`).
-  def label; @label ||= formula.plist_name end
+  def label
+    @label ||= formula.plist_name
+  end
 
   # Path to a static plist file. This is always `homebrew.mxcl.<formula>.plist`.
-  def plist; @plist ||= formula.opt_prefix + "#{label}.plist" end
+  def plist
+    @plist ||= formula.opt_prefix + "#{label}.plist"
+  end
 
   # Path to destination plist directory. If run as root, it's `boot_path`, else `user_path`.
-  def dest_dir; (ServicesCli.root? ? ServicesCli.boot_path : ServicesCli.user_path) end
+  def dest_dir
+    ServicesCli.root? ? ServicesCli.boot_path : ServicesCli.user_path
+  end
 
   # Path to destination plist. If run as root, it's in `boot_path`, else `user_path`.
-  def dest; dest_dir + "#{label}.plist" end
+  def dest
+    dest_dir + "#{label}.plist"
+  end
 
   # Returns `true` if any version of the formula is installed.
-  def installed?; formula.installed? || ((dir = formula.opt_prefix).directory? && dir.children.length > 0) end
+  def installed?
+    formula.installed? || ((dir = formula.opt_prefix).directory? && !dir.children.empty?)
+  end
 
   # Returns `true` if the formula implements #startup_plist or the plist file exists.
-  def plist?; installed? && (plist.file? || !formula.plist.nil? || !formula.startup_plist.nil?) end
+  def plist?
+    installed? && (plist.file? || !formula.plist.nil? || !formula.startup_plist.nil?)
+  end
 
   # Returns `true` if the service is loaded, else false.
-  def loaded?; %x{#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null}.chomp =~ /#{label}\z/ end
+  def loaded?
+    `#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null`.chomp =~ /#{label}\z/
+  end
 
   # Returns `true` if service is started (.plist is present in LaunchDaemon or LaunchAgent path), else `false`
   # Accepts Hash option `:as` with values `:root` for LaunchDaemon path or `:user` for LaunchAgent path.
@@ -398,7 +435,7 @@ class Service
 
   # Get current PID of daemon process from launchctl.
   def pid
-    status = %x{#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null}.chomp
+    status = `#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null`.chomp
     return $1.to_i if status =~ /\A([\d]+)\s+.+#{label}\z/
   end
 
@@ -409,15 +446,14 @@ class Service
     if data.respond_to?(:file?) && data.file?
       data = data.read
     elsif data.respond_to?(:keys) && data.keys.include?(:url)
-      require 'open-uri'
+      require "open-uri"
       data = open(data).read
     elsif !data
       odie "Could not read the plist for `#{name}`!"
     end
 
     # Replace "template" variables and ensure label is always, always homebrew.mxcl.<formula>
-    data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) { |m| formula.send($1).to_s if formula.respond_to?($1) }.
-              gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
+    data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) { |_m| formula.send($1).to_s if formula.respond_to?($1) }.gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
 
     # Force fix UserName
     if !ServicesCli.root?
@@ -430,7 +466,7 @@ class Service
       end
     elsif data =~ %r{<key>UserName</key>}
       # Always remove UserName key entirely if running as root
-      data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, '')
+      data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, "")
     end
 
     if ARGV.verbose?
