@@ -173,7 +173,10 @@ module ServicesCli
       homebrew!
       usage if ARGV.empty? || ARGV.include?("help") || ARGV.include?("--help") || ARGV.include?("-h")
 
-      odie "brew services cannot run under tmux!" if ENV["TMUX"]
+      # pbpaste's exit status is a proxy for detecting the use of reattach-to-user-namespace
+      if ENV["TMUX"] && !quiet_system("/usr/bin/pbpaste")
+        odie "brew services cannot run under tmux!"
+      end
 
       # Parse arguments.
       act_on_all_services = !ARGV.delete("--all").nil?
