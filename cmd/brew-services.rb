@@ -46,10 +46,10 @@
 # ## SYNTAX
 #
 # Several existing formulae (like mysql, nginx) already write a custom plist
-# file to the formulae prefix. Most of these implement `#startup_plist`, which
+# file to the formulae prefix. Most of these implement `#plist`, which
 # then, in turn, returns a neato plist file as a string.
 #
-# `brew services` operates on `#startup_plist` as well, and requires supporting
+# `brew services` operates on `#plist` as well, and requires supporting
 # formulae to implement it. This method should either return a string containing
 # the generated XML file, or return a `Pathname` instance pointing to a plist
 # template or to a hash like this:
@@ -300,7 +300,7 @@ module ServicesCli
           end
         end
 
-        odie "Formula `#{target.name}` not installed, #startup_plist not implemented or no plist file found" if !custom_plist && !target.plist?
+        odie "Formula `#{target.name}` not installed, #plist not implemented or no plist file found" if !custom_plist && !target.plist?
       end
 
       Array(target).each do |service|
@@ -408,9 +408,9 @@ class Service
     formula.installed? || ((dir = formula.opt_prefix).directory? && !dir.children.empty?)
   end
 
-  # Returns `true` if the formula implements #startup_plist or the plist file exists.
+  # Returns `true` if the formula implements #plist or the plist file exists.
   def plist?
-    installed? && (plist.file? || !formula.plist.nil? || !formula.startup_plist.nil?)
+    installed? && (plist.file? || !formula.plist.nil?)
   end
 
   # Returns `true` if the service is loaded, else false.
@@ -444,7 +444,7 @@ class Service
 
   # Generate that plist file, dude.
   def generate_plist(data = nil)
-    data ||= plist.file? ? plist : formula.startup_plist
+    data ||= plist.file? ? plist : formula.plist
 
     if data.respond_to?(:file?) && data.file?
       data = data.read
