@@ -298,9 +298,15 @@ module ServicesCli
           else
             odie "#{custom_plist} is not a url or existing file"
           end
+        elsif !target.plist.file? && target.formula.plist.nil?
+          if target.formula.opt_prefix.exist? &&
+             (keg = Keg.for target.formula.opt_prefix) &&
+             keg.plist_installed?
+            custom_plist = Pathname.new Dir["#{keg}/*.plist"].first
+          else
+            odie "Formula `#{target.name}` not installed, #plist not implemented or no plist file found"
+          end
         end
-
-        odie "Formula `#{target.name}` not installed, #plist not implemented or no plist file found" if !custom_plist && !target.plist?
       end
 
       Array(target).each do |service|
@@ -410,7 +416,11 @@ class Service
 
   # Returns `true` if the formula implements #plist or the plist file exists.
   def plist?
-    installed? && (plist.file? || !formula.plist.nil?)
+    return false unless installed?
+    return true if plist.file?
+    return true unless formula.plist.nil?
+    return false unless formula.opt_prefix.exist?
+    return true if Keg.for(formula.opt_prefix).plist_installed?
   end
 
   # Returns `true` if the service is loaded, else false.
