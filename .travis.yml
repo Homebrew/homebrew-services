@@ -4,6 +4,7 @@ os: osx
 
 # Empty (to avoid Bundler).
 install:
+  - brew update
   - brew install mysql
 
 # Install Strap and then test installing packages works.
