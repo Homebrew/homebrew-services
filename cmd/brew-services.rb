@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby -w
-
 # brew-services(1) - Easily start and stop formulae via launchctl
 # ===============================================================
 #
@@ -179,10 +177,10 @@ module ServicesCli
       end
 
       # Parse arguments.
-      act_on_all_services = !ARGV.delete("--all").nil?
-      args = ARGV.reject { |arg| arg[0] == 45 }.map { |arg| arg.include?("/") ? arg : arg.downcase } # 45.chr == '-'
-      cmd = args.shift
-      formula = args.shift
+      act_on_all_services = ARGV.include?("--all")
+      cmd = ARGV.named[0]
+      formula = ARGV.named[1]
+      custom_plist = ARGV.named[2]
 
       target = if act_on_all_services
         available_services
@@ -195,7 +193,7 @@ module ServicesCli
       when "cleanup", "clean", "cl", "rm" then cleanup
       when "list", "ls" then list
       when "restart", "relaunch", "reload", "r" then check(target) and restart(target)
-      when "start", "launch", "load", "s", "l" then check(target) and start(target, args.first)
+      when "start", "launch", "load", "s", "l" then check(target) and start(target, custom_plist)
       when "stop", "unload", "terminate", "term", "t", "u" then check(target) and stop(target)
       else
         onoe "Unknown command `#{cmd}`"
