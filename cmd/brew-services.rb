@@ -419,6 +419,8 @@ class Service
     return true unless formula.plist.nil?
     return false unless formula.opt_prefix.exist?
     return true if Keg.for(formula.opt_prefix).plist_installed?
+  rescue NotAKegError
+    false
   end
 
   # Returns `true` if the service is loaded, else false.
