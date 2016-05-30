@@ -466,6 +466,7 @@ class Service
     # Replace "template" variables and ensure label is always, always homebrew.mxcl.<formula>
     data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) { |_m| formula.send($1).to_s if formula.respond_to?($1) }.gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
 
+    # Always remove the "UserName" as it doesn't work since 10.11.5 
     if data =~ %r{<key>UserName</key>}
       data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, "")
     end
