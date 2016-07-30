@@ -185,7 +185,7 @@ module ServicesCli
       target = if act_on_all_services
         available_services
       elsif formula
-        Service.new(Formula.factory(formula))
+        Service.new(Formulary.factory(formula))
       end
 
       # Dispatch commands and aliases.
