@@ -371,7 +371,7 @@ class Service
   def self.from(path_or_label)
     return nil unless path_or_label =~ /homebrew\.mxcl\.([^\.]+)(\.plist)?\z/
     begin
-      new(Formula.factory($1))
+      new(Formulary.factory($1))
     rescue
       nil
     end
