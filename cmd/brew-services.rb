@@ -152,12 +152,13 @@ module ServicesCli
       puts "Small wrapper around `launchctl` for supported formulae, commands available:"
       puts "   cleanup Get rid of stale services and unused plists"
       puts "   list    List all services managed by `#{bin}`"
-      puts "   restart Gracefully restart service(s)"
-      puts "   start   Start service(s)"
-      puts "   stop    Stop service(s)"
+      puts "   restart Gracefully restart a service"
+      puts "   start   Start a service"
+      puts "   stop    Stop a service"
       puts
       puts "Options, sudo and paths:"
       puts
+      puts "  `restart`, `start` and `stop` accept `--all` to operate on all services"
       puts "  sudo   When run as root, operates on #{boot_path} (run at boot!)"
       puts "  Run at boot:  #{boot_path}"
       puts "  Run at login: #{user_path}"
