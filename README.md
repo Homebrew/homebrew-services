@@ -3,7 +3,7 @@ Homebrew Services
 
 [![Build Status](https://travis-ci.org/Homebrew/homebrew-services.svg?branch=master)](https://travis-ci.org/Homebrew/homebrew-services)
 
-Integrates Homebrew formulae with MacOS X's `launchctl` manager.
+Integrates Homebrew formulae with macOS's `launchctl` manager.
 
 By default, plists are installed to `~/Library/LaunchAgents/` and run as the
 current user upon login.  When `brew services` is run as the root user, plists
