@@ -1,95 +1,32 @@
-# brew-services(1) - Easily start and stop formulae via launchctl
-# ===============================================================
-#
-# ## SYNOPSIS
-#
-# [<sudo>] `brew services` `list`
-# [<sudo>] `brew services` `restart` <formula>
-# [<sudo>] `brew services` `start` <formula> [<plist>]
-# [<sudo>] `brew services` `stop` <formula>
-# [<sudo>] `brew services` `cleanup`
-#
-# ## DESCRIPTION
-#
-# Integrates Homebrew formulae with OS X's `launchctl` manager. Services can be
-# added to either `/Library/LaunchDaemons` or `~/Library/LaunchAgents`.
-# Basically, items in `/Library/LaunchDaemons` are started at boot, while those
-# in `~/Library/LaunchAgents` are started at login.
-#
-# When started with `sudo`, it operates on `/Library/LaunchDaemons`; otherwise,
-# it operates on `~/Library/LaunchAgents`.
-#
-# On `start` the plist file is generated and written to a `Tempfile`, and then
-# copied to the launch path (existing plists are overwritten).
-#
-# ## OPTIONS
-#
-# To access everything quickly, some aliases have been added:
-#
-#  * `rm`:
-#    Shortcut for `cleanup`, because that's basically what's being done.
-#
-#  * `ls`:
-#    Because `list` is too much to type. :)
-#
-#  * `reload', 'r':
-#    Alias for `restart`, which gracefully restarts the selected service.
-#
-#  * `load`, `s`:
-#    Alias for `start`, guess what it does...
-#
-#  * `unload`, `term`, `t`:
-#    Alias for `stop`, stops and unloads selected service.
-#
-# ## SYNTAX
-#
-# Several existing formulae (like mysql, nginx) already write a custom plist
-# file to the formulae prefix. Most of these implement `#plist`, which
-# then, in turn, returns a neato plist file as a string.
-#
-# `brew services` operates on `#plist` as well, and requires supporting
-# formulae to implement it. This method should either return a string containing
-# the generated XML file, or return a `Pathname` instance pointing to a plist
-# template or to a hash like this:
-#
-#    { :url => "https://gist.github.com/raw/534777/63c4698872aaef11fe6e6c0c5514f35fd1b1687b/nginx.plist.xml" }
-#
-# Some simple template parsing is performed. All variables like `{{name}}` are
-# replaced by basically doing the following:
-# `formula.send('name').to_s if formula.respond_to?('name')`, a bit like
-# mustache. So any variable in the `Formula` is available as a template
-# variable, like `{{var}}`, `{{bin}}`, and `{{usr}}`.
-#
-# ## EXAMPLES
-#
-# Install and start the service "mysql" at boot:
-#
-#     $ brew install mysql
-#     $ sudo brew services start mysql
-#
-# Stop the service "mysql" (after it was launched at boot):
-#
-#     $ sudo brew services stop mysql
-#
-# Start the service "memcached" at login:
-#
-#     $ brew install memcached
-#     $ brew services start memcached
-#
-# List all running services for the current user and then for root:
-#
-#     $ brew services list
-#     $ sudo brew services list
-#
-# Stop all running services for the current user:
-#
-#     $ brew services stop --all
-#
-# ## BUGS
-#
-# `brew-services.rb` might not handle all edge cases, but it will try to fix
-# problems if you run `brew services cleanup`.
-#
+#:  * `services`
+#:    Easily start and stop formulae via launchctl
+#:
+#:    Integrates Homebrew formulae with OS X's `launchctl` manager. Services can be
+#:    added to either `/Library/LaunchDaemons` or `~/Library/LaunchAgents`.
+#:    Basically, items in `/Library/LaunchDaemons` are started at boot, while those
+#:    in `~/Library/LaunchAgents` are started at login.
+#:
+#:    When started with `sudo`, it operates on `/Library/LaunchDaemons`; otherwise,
+#:    it operates on `~/Library/LaunchAgents`.
+#:
+#:    On `start` the plist file is generated and written to a `Tempfile`, and then
+#:    copied to the launch path (existing plists are overwritten).
+#:
+#:    [<sudo>] `brew services` `list`
+#:    List all running services for the current user (or <root>)
+#:
+#:    [<sudo>] `brew services` `start` <formula>
+#:    Install and start the service <formula> at login (or <boot>).
+#:
+#:    [<sudo>] `brew services` `stop` <formula|--all>
+#:    Stop the service <formula> after it was launched at login (or <boot>).
+#:
+#:    [<sudo>] `brew services` `restart` <formula>
+#:    Stop (if necessary), install and start the service <formula> at login (or <boot>).
+#:
+#:    [<sudo>] `brew services` `cleanup`
+#:    Remove all unused services.
+
 module ServicesCli
   class << self
     # Binary name.
@@ -144,33 +81,9 @@ module ServicesCli
       Formula.installed.map { |formula| Service.new(formula) }.select(&:plist?)
     end
 
-    # Print usage and `exit(...)` with supplied exit code. If code
-    # is set to `false`, then exit is ignored.
-    def usage(code = 0)
-      puts "usage: [sudo] #{bin} [--help] <command> [<formula>|--all]"
-      puts
-      puts "Small wrapper around `launchctl` for supported formulae, commands available:"
-      puts "   cleanup Get rid of stale services and unused plists"
-      puts "   list    List all services managed by `#{bin}`"
-      puts "   restart Gracefully restart a service"
-      puts "   start   Start a service"
-      puts "   stop    Stop a service"
-      puts
-      puts "Options, sudo and paths:"
-      puts
-      puts "  `restart`, `start` and `stop` accept `--all` to operate on all services"
-      puts "  sudo   When run as root, operates on #{boot_path} (run at boot!)"
-      puts "  Run at boot:  #{boot_path}"
-      puts "  Run at login: #{user_path}"
-      puts
-      exit(code) unless code == false
-      true
-    end
-
     # Run and start the command loop.
     def run!
       homebrew!
-      usage if ARGV.empty? || ARGV.include?("help") || ARGV.include?("--help") || ARGV.include?("-h")
 
       # pbpaste's exit status is a proxy for detecting the use of reattach-to-user-namespace
       if ENV["TMUX"] && !quiet_system("/usr/bin/pbpaste")
@@ -197,8 +110,8 @@ module ServicesCli
       when "start", "launch", "load", "s", "l" then check(target) and start(target, custom_plist)
       when "stop", "unload", "terminate", "term", "t", "u" then check(target) and stop(target)
       else
-        onoe "Unknown command `#{cmd}`"
-        usage(1)
+        onoe "Unknown command `#{cmd}`!"
+        abort `brew services --help`
       end
     end
 
@@ -469,7 +382,7 @@ class Service
     # Replace "template" variables and ensure label is always, always homebrew.mxcl.<formula>
     data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) { |_m| formula.send($1).to_s if formula.respond_to?($1) }.gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
 
-    # Always remove the "UserName" as it doesn't work since 10.11.5 
+    # Always remove the "UserName" as it doesn't work since 10.11.5
     if data =~ %r{<key>UserName</key>}
       data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, "")
     end
