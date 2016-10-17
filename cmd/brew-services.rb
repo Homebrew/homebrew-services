@@ -110,7 +110,7 @@ module ServicesCli
       when "start", "launch", "load", "s", "l" then check(target) and start(target, custom_plist)
       when "stop", "unload", "terminate", "term", "t", "u" then check(target) and stop(target)
       else
-        onoe "Unknown command `#{cmd}`!"
+        onoe "Unknown command `#{cmd}`!" unless cmd.nil?
         abort `brew services --help`
       end
     end
