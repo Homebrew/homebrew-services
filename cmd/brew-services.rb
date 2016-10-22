@@ -41,7 +41,7 @@ module ServicesCli
 
     # Woohoo, we are root dude!
     def root?
-      Process.uid == 0
+      Process.uid.zero?
     end
 
     # Current user, i.e., owner of `HOMEBREW_CELLAR`.
@@ -106,9 +106,9 @@ module ServicesCli
       case cmd
       when "cleanup", "clean", "cl", "rm" then cleanup
       when "list", "ls" then list
-      when "restart", "relaunch", "reload", "r" then check(target) and restart(target)
-      when "start", "launch", "load", "s", "l" then check(target) and start(target, custom_plist)
-      when "stop", "unload", "terminate", "term", "t", "u" then check(target) and stop(target)
+      when "restart", "relaunch", "reload", "r" then check(target) && restart(target)
+      when "start", "launch", "load", "s", "l" then check(target) && start(target, custom_plist)
+      when "stop", "unload", "terminate", "term", "t", "u" then check(target) && stop(target)
       else
         onoe "Unknown command `#{cmd}`!" unless cmd.nil?
         abort `brew services --help`
@@ -125,17 +125,17 @@ module ServicesCli
     def list
       formulae = available_services.map do |service|
         formula = {
-          :name => service.formula.name,
-          :started => false,
-          :user => nil,
-          :plist => nil,
+          name: service.formula.name,
+          started: false,
+          user: nil,
+          plist: nil,
         }
 
-        if service.started?(:as => :root)
+        if service.started?(as: :root)
           formula[:started] = true
           formula[:user] = "root"
           formula[:plist] = ServicesCli.boot_path + "#{service.label}.plist"
-        elsif service.started?(:as => :user)
+        elsif service.started?(as: :user)
           formula[:started] = true
           formula[:user] = ServicesCli.user
           formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
@@ -152,9 +152,14 @@ module ServicesCli
       longest_name = [formulae.max_by { |formula| formula[:name].length }[:name].length, 4].max
       longest_user = [formulae.map { |formula| formula[:user].nil? ? 4 : formula[:user].length }.max, 4].max
 
-      puts "#{Tty.white}%-#{longest_name}.#{longest_name}s %-7.7s %-#{longest_user}.#{longest_user}s %s#{Tty.reset}" % ["Name", "Status", "User", "Plist"]
+      puts format("#{Tty.white}%-#{longest_name}.#{longest_name}s %-7.7s %-#{longest_user}.#{longest_user}s %s#{Tty.reset}",
+                  "Name", "Status", "User", "Plist")
       formulae.each do |formula|
-        puts "%-#{longest_name}.#{longest_name}s %s %-#{longest_user}.#{longest_user}s %s" % [formula[:name], formula[:started] ? "#{Tty.green}started#{Tty.reset}" : "stopped", formula[:user], formula[:plist]]
+        puts format("%-#{longest_name}.#{longest_name}s %s %-#{longest_user}.#{longest_user}s %s",
+                    formula[:name],
+                    formula[:started] ? "#{Tty.green}started#{Tty.reset}" : "stopped",
+                    formula[:user],
+                    formula[:plist])
       end
     end
 
@@ -166,7 +171,7 @@ module ServicesCli
       running.each do |label|
         if svc = Service.from(label)
           unless svc.dest.file?
-            puts "%-15.15s #{Tty.white}stale#{Tty.reset} => killing service..." % svc.name
+            puts format("%-15.15s #{Tty.white}stale#{Tty.reset} => killing service...", svc.name)
             kill(svc)
             cleaned << label
           end
@@ -204,7 +209,7 @@ module ServicesCli
 
         if custom_plist
           if custom_plist =~ %r{\Ahttps?://.+}
-            custom_plist = { :url => custom_plist }
+            custom_plist = { url: custom_plist }
           elsif File.exist?(custom_plist)
             custom_plist = Pathname.new(custom_plist)
           else
@@ -234,7 +239,7 @@ module ServicesCli
         temp.close
 
         safe_system launchctl, "load", "-w", service.dest.to_s
-        $?.to_i != 0 ? odie("Failed to start `#{service.name}`") : ohai("Successfully started `#{service.name}` (label: #{service.label})")
+        $?.to_i.nonzero? ? odie("Failed to start `#{service.name}`") : ohai("Successfully started `#{service.name}` (label: #{service.label})")
       end
     end
 
@@ -253,7 +258,7 @@ module ServicesCli
         if service.dest.exist?
           puts "Stopping `#{service.name}`... (might take a while)"
           safe_system launchctl, "unload", "-w", service.dest.to_s
-          $?.to_i != 0 ? odie("Failed to stop `#{service.name}`") : ohai("Successfully stopped `#{service.name}` (label: #{service.label})")
+          $?.to_i.nonzero? ? odie("Failed to stop `#{service.name}`") : ohai("Successfully stopped `#{service.name}` (label: #{service.label})")
         else
           puts "Stopping stale service `#{service.name}`... (might take a while)"
           kill(service)
@@ -265,7 +270,7 @@ module ServicesCli
     # Kill a service that has no plist file by issuing `launchctl remove`.
     def kill(svc)
       safe_system launchctl, "remove", svc.label
-      odie("Failed to remove `#{svc.name}`, try again?") unless $?.to_i == 0
+      odie("Failed to remove `#{svc.name}`, try again?") unless $?.to_i.zero?
       while svc.loaded?
         puts "  ...checking status"
         sleep(5)
@@ -344,19 +349,19 @@ class Service
 
   # Returns `true` if service is started (.plist is present in LaunchDaemon or LaunchAgent path), else `false`
   # Accepts Hash option `:as` with values `:root` for LaunchDaemon path or `:user` for LaunchAgent path.
-  def started?(opts = {:as => false})
+  def started?(opts = { as: false })
     if opts[:as] && opts[:as] == :root
       (ServicesCli.boot_path + "#{label}.plist").exist?
     elsif opts[:as] && opts[:as] == :user
       (ServicesCli.user_path + "#{label}.plist").exist?
     else
-      started?(:as => :root) || started?(:as => :user)
+      started?(as: :root) || started?(as: :user)
     end
   end
 
   def started_as
-    return "root" if started?(:as => :root)
-    return ServicesCli.user if started?(:as => :user)
+    return "root" if started?(as: :root)
+    return ServicesCli.user if started?(as: :user)
     nil
   end
 
