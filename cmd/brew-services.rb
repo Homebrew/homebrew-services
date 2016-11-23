@@ -215,13 +215,15 @@ module ServicesCli
           else
             odie "#{custom_plist} is not a url or existing file"
           end
+        elsif !target.installed?
+          odie "Formula `#{target.name}` is not installed."
         elsif !target.plist.file? && target.formula.plist.nil?
           if target.formula.opt_prefix.exist? &&
              (keg = Keg.for target.formula.opt_prefix) &&
              keg.plist_installed?
             custom_plist = Pathname.new Dir["#{keg}/*.plist"].first
           else
-            odie "Formula `#{target.name}` not installed, #plist not implemented or no plist file found"
+            odie "Formula `#{target.name}` has not implemented #plist or installed a locatable .plist file"
           end
         end
       end
