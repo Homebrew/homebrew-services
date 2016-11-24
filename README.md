@@ -17,7 +17,7 @@ brew tap homebrew/services
 
 ## Examples ##
 
-### Install and start service mysql at login ###
+### Start service mysql ###
 
 ```
 $ brew install mysql
@@ -36,12 +36,17 @@ Restart service mysql:
 $ brew services restart mysql
 ```
 
+Install and start service mysql at login:
+
+```
+$ brew services install mysql
+```
 
 ### Install and start dnsmasq service at boot ###
 
 ```
 $ brew install dnsmasq
-$ sudo brew services start dnsmasq
+$ sudo brew services install dnsmasq
 ```
 
 ### List all services managed by `brew services` ###
