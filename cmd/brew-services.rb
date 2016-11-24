@@ -16,13 +16,19 @@
 #:    List all running services for the current user (or <root>)
 #:
 #:    [<sudo>] `brew services` `start` <formula>
-#:    Install and start the service <formula> at login (or <boot>).
+#:    Start the service <formula>.
 #:
 #:    [<sudo>] `brew services` `stop` <formula|--all>
-#:    Stop the service <formula> after it was launched at login (or <boot>).
+#:    Stop the service <formula> after it was launched.
 #:
 #:    [<sudo>] `brew services` `restart` <formula>
-#:    Stop (if necessary), install and start the service <formula> at login (or <boot>).
+#:    Stop (if necessary) and start the service <formula>.
+#:
+#:    [<sudo>] `brew services` `install` <formula>
+#:    Install and start the service <formula> at login (or <boot>).
+#:
+#:    [<sudo>] `brew services` `uninstall` <formula|--all>
+#:    Stop and uninstall the service <formula> after it was launched at login (or <boot>).
 #:
 #:    [<sudo>] `brew services` `cleanup`
 #:    Remove all unused services.
@@ -109,6 +115,8 @@ module ServicesCli
       when "restart", "relaunch", "reload", "r" then check(target) && restart(target)
       when "start", "launch", "load", "s", "l" then check(target) && start(target, custom_plist)
       when "stop", "unload", "terminate", "term", "t", "u" then check(target) && stop(target)
+      when "install", "i" then check(target) && install(target, custom_plist) && start(target, custom_plist)
+      when "uninstall", "remove" then check(target) && stop(target) && uninstall(target)
       else
         onoe "Unknown command `#{cmd}`!" unless cmd.nil?
         abort `brew services --help`
@@ -126,19 +134,29 @@ module ServicesCli
       formulae = available_services.map do |service|
         formula = {
           name: service.formula.name,
+          installed: false,
           started: false,
           user: nil,
           plist: nil,
         }
 
-        if service.started?(as: :root)
-          formula[:started] = true
-          formula[:user] = "root"
+
+        formula[:started] = service.loaded?
+
+        if service.installed?(as: :root)
+          formula[:installed] = true
           formula[:plist] = ServicesCli.boot_path + "#{service.label}.plist"
-        elsif service.started?(as: :user)
-          formula[:started] = true
-          formula[:user] = ServicesCli.user
+        elsif service.installed?(as: :user)
+          formula[:installed] = true
           formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
+        end
+
+        if service.loaded?
+          if root?
+            formula[:user] = "root"
+          else
+            formula[:user] = ServicesCli.user
+          end
         end
 
         formula
@@ -152,12 +170,13 @@ module ServicesCli
       longest_name = [formulae.max_by { |formula| formula[:name].length }[:name].length, 4].max
       longest_user = [formulae.map { |formula| formula[:user].nil? ? 4 : formula[:user].length }.max, 4].max
 
-      puts format("#{Tty.white}%-#{longest_name}.#{longest_name}s %-7.7s %-#{longest_user}.#{longest_user}s %s#{Tty.reset}",
-                  "Name", "Status", "User", "Plist")
+      puts format("#{Tty.white}%-#{longest_name}.#{longest_name}s %-7.7s %-9.9s %-#{longest_user}.#{longest_user}s %s#{Tty.reset}",
+                  "Name", "Status", "Installed", "User", "Plist")
       formulae.each do |formula|
-        puts format("%-#{longest_name}.#{longest_name}s %s %-#{longest_user}.#{longest_user}s %s",
+        puts format("%-#{longest_name}.#{longest_name}s %s %s       %-#{longest_user}.#{longest_user}s %s",
                     formula[:name],
                     formula[:started] ? "#{Tty.green}started#{Tty.reset}" : "stopped",
+                    formula[:installed] ? "#{Tty.green}yes#{Tty.reset}" : "no ",
                     formula[:user],
                     formula[:plist])
       end
@@ -221,24 +240,21 @@ module ServicesCli
              keg.plist_installed?
             custom_plist = Pathname.new Dir["#{keg}/*.plist"].first
           else
-            odie "Formula `#{target.name}` not installed, #plist not implemented or no plist file found"
+            odie "Formula `#{target.name}` not started, #plist not implemented or no plist file found"
           end
         end
       end
 
       Array(target).each do |service|
-        temp = Tempfile.new(service.label)
-        temp << service.generate_plist(custom_plist)
-        temp.flush
-
-        rm service.dest if service.dest.exist?
-        service.dest_dir.mkpath unless service.dest_dir.directory?
-        cp temp.path, service.dest
-
-        # Clear tempfile.
-        temp.close
-
-        safe_system launchctl, "load", "-w", service.dest.to_s
+        unless service.installed?
+          temp = Tempfile.new(service.label)
+          temp << service.generate_plist(custom_plist)
+          temp.flush
+          mv temp.path, "#{temp.path}.plist"
+          safe_system launchctl, "load", "-w", "#{temp.path}.plist".to_s
+        else
+          safe_system launchctl, "load", "-w", service.dest.to_s
+        end
         $?.to_i.nonzero? ? odie("Failed to start `#{service.name}`") : ohai("Successfully started `#{service.name}` (label: #{service.label})")
       end
     end
@@ -246,9 +262,8 @@ module ServicesCli
     # Stop a service, or kill it if no plist file is available.
     def stop(target)
       if target.is_a?(Service) && !target.loaded?
-        rm target.dest if target.dest.exist? # get rid of installed plist anyway, dude
-        if target.started?
-          odie "Service `#{target.name}` is started as `#{target.started_as}`. Try `#{"sudo " unless ServicesCli.root?}#{bin} stop #{target.name}`"
+        if target.loaded?
+          odie "Service `#{target.name}` is started as `#{target.loaded_as}`. Try `#{"sudo " unless ServicesCli.root?}#{bin} stop #{target.name}`"
         else
           odie "Service `#{target.name}` is not started."
         end
@@ -263,7 +278,6 @@ module ServicesCli
           puts "Stopping stale service `#{service.name}`... (might take a while)"
           kill(service)
         end
-        rm service.dest if service.dest.exist?
       end
     end
 
@@ -276,6 +290,32 @@ module ServicesCli
         sleep(5)
       end
       ohai "Successfully stopped `#{svc.name}` via #{svc.label}"
+    end
+
+    # Copy plist file to LaunchAgents/LaunchDaemons folder
+    def install(target, custom_plist)
+      Array(target).each do |service|
+        temp = Tempfile.new(service.label)
+        temp << service.generate_plist(custom_plist)
+        temp.flush
+
+        rm service.dest if service.dest.exist?
+        service.dest_dir.mkpath unless service.dest_dir.directory?
+        cp temp.path, service.dest
+
+        # Clear tempfile.
+        temp.close
+      end
+    end
+
+    # Remove plist file from LaunchAgents/LaunchDaemons folder
+    def uninstall(target)
+      if target.is_a?(Service) && !target.installed?
+        rm target.dest if target.dest.exist? # get rid of installed plist anyway, dude
+      end
+      Array(target).select(&:installed?).each do |service|
+        rm service.dest if service.dest.exist?
+      end
     end
   end
 end
@@ -327,13 +367,13 @@ class Service
   end
 
   # Returns `true` if any version of the formula is installed.
-  def installed?
+  def formula_installed?
     formula.installed? || ((dir = formula.opt_prefix).directory? && !dir.children.empty?)
   end
 
   # Returns `true` if the formula implements #plist or the plist file exists.
   def plist?
-    return false unless installed?
+    return false unless formula_installed?
     return true if plist.file?
     return true unless formula.plist.nil?
     return false unless formula.opt_prefix.exist?
@@ -347,21 +387,21 @@ class Service
     `#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null`.chomp =~ /#{label}\z/
   end
 
-  # Returns `true` if service is started (.plist is present in LaunchDaemon or LaunchAgent path), else `false`
+  # Returns `true` if service is installed (.plist is present in LaunchDaemon or LaunchAgent path), else `false`
   # Accepts Hash option `:as` with values `:root` for LaunchDaemon path or `:user` for LaunchAgent path.
-  def started?(opts = { as: false })
+  def installed?(opts = { as: false })
     if opts[:as] && opts[:as] == :root
       (ServicesCli.boot_path + "#{label}.plist").exist?
     elsif opts[:as] && opts[:as] == :user
       (ServicesCli.user_path + "#{label}.plist").exist?
     else
-      started?(as: :root) || started?(as: :user)
+      installed?(as: :root) || installed?(as: :user)
     end
   end
 
-  def started_as
-    return "root" if started?(as: :root)
-    return ServicesCli.user if started?(as: :user)
+  def installed_as
+    return "root" if installed?(as: :root)
+    return ServicesCli.user if installed?(as: :user)
     nil
   end
 
