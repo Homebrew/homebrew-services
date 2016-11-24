@@ -15,6 +15,8 @@ __brew_services_commands() {
     'restart:Gracefully restart selected service'
     'start:Start selected service'
     'stop:Stop selected service'
+    'install:Install selected service'
+    'uninstall:Uninstall selected service'
   )
   _describe -t commands 'commands' commands
 }
@@ -39,6 +41,8 @@ __brew_services_expand_alias()
     terminate stop
     u stop
     t stop
+    i install
+    remove uninstall
   )
   command="${aliases[$command_or_alias]:-$command_or_alias}"
   print "${command}"
@@ -66,6 +70,19 @@ _brew_services_start() {
 }
 
 _brew_services_stop() {
+  _arguments \
+    '(2)--all[operate on all services]' \
+    '(--all)2:service:__brew_installed_services'
+}
+
+_brew_services_install() {
+  _arguments \
+    '(2)--all[operate on all services]' \
+    '(--all)2:service:__brew_installed_services' \
+    '*:plist: '
+}
+
+_brew_services_uninstall() {
   _arguments \
     '(2)--all[operate on all services]' \
     '(--all)2:service:__brew_installed_services'
