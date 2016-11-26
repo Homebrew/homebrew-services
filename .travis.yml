@@ -1,16 +1,33 @@
-# Force OS X.
-language: objective-c
+language: ruby
 os: osx
+env: OSX=10.12
+osx_image: xcode8.1
+rvm: system
 
-# Empty (to avoid Bundler).
-install:
-  - brew update
-  - brew install mysql
+before_install:
+  - export TRAVIS_COMMIT="$(git rev-parse --verify -q HEAD)"
+  - if [ -f ".git/shallow" ]; then
+      travis_retry git fetch --unshallow;
+    fi
+  - sudo chown -R $USER "$(brew --repo)"
+  - git -C "$(brew --repo)" reset --hard origin/master
+  - brew update || brew update
+  - rm -rf "$(brew --repo $TRAVIS_REPO_SLUG)"
+  - mkdir -p "$(brew --repo $TRAVIS_REPO_SLUG)"
+  - rsync -az "$TRAVIS_BUILD_DIR/" "$(brew --repo $TRAVIS_REPO_SLUG)"
+  - export TRAVIS_BUILD_DIR="$(brew --repo $TRAVIS_REPO_SLUG)"
+  - cd "$(brew --repo)"
+  - export HOMEBREW_DEVELOPER="1"
+  - ulimit -n 1024
 
-# Install Strap and then test installing packages works.
 script:
-  - PATH="cmd:$PATH" brew services start mysql
-  - PATH="cmd:$PATH" brew services list | grep mysql
+  - brew services start mysql
+  - brew services list | grep mysql
   - sleep 2
   - mysql -uroot -e 'show databases'
-  - PATH="cmd:$PATH" brew services stop mysql
+  - brew services stop mysql
+
+notifications:
+  email:
+    on_success: never
+    on_failure: always
