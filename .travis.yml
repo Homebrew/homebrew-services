@@ -20,6 +20,9 @@ before_install:
   - export HOMEBREW_DEVELOPER="1"
   - ulimit -n 1024
 
+install:
+  - brew install mysql
+
 script:
   - brew services start mysql
   - brew services list | grep mysql
