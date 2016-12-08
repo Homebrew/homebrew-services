@@ -126,19 +126,24 @@ module ServicesCli
       formulae = available_services.map do |service|
         formula = {
           name: service.formula.name,
-          started: false,
+          status: :stopped,
           user: nil,
           plist: nil,
         }
 
         if service.started?(as: :root)
-          formula[:started] = true
+          formula[:status] = :started
           formula[:user] = "root"
           formula[:plist] = ServicesCli.boot_path + "#{service.label}.plist"
         elsif service.started?(as: :user)
-          formula[:started] = true
+          formula[:status] = :started
           formula[:user] = ServicesCli.user
           formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
+        end
+
+        # Check the exit code of the service, might indicate an error
+        if formula[:status] == :started && service.exit_code.nonzero?
+          formula[:status] = :error
         end
 
         formula
@@ -155,9 +160,18 @@ module ServicesCli
       puts format("#{Tty.white}%-#{longest_name}.#{longest_name}s %-7.7s %-#{longest_user}.#{longest_user}s %s#{Tty.reset}",
                   "Name", "Status", "User", "Plist")
       formulae.each do |formula|
+        status = case formula[:status]
+          when :started
+            "#{Tty.green}started#{Tty.reset}"
+          when :stopped
+            "stopped"
+          when :error
+            "#{Tty.red}error  #{Tty.reset}"
+          end
+
         puts format("%-#{longest_name}.#{longest_name}s %s %-#{longest_user}.#{longest_user}s %s",
                     formula[:name],
-                    formula[:started] ? "#{Tty.green}started#{Tty.reset}" : "stopped",
+                    status,
                     formula[:user],
                     formula[:plist])
       end
@@ -369,8 +383,11 @@ class Service
 
   # Get current PID of daemon process from launchctl.
   def pid
-    status = `#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null`.chomp
-    return $1.to_i if status =~ /\A([\d]+)\s+.+#{label}\z/
+    return $1.to_i if status =~ status_regexp
+  end
+
+  def exit_code
+    return $2.to_i if status =~ status_regexp
   end
 
   # Generate that plist file, dude.
@@ -401,6 +418,16 @@ class Service
     end
 
     data
+  end
+
+  private
+
+  def status
+    `#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null`.chomp
+  end
+
+  def status_regexp
+    /\A([\d\-]+)\s+([\d]+)\s+#{label}\z/
   end
 end
 
