@@ -290,7 +290,7 @@ class Service
 
   # Create a new `Service` instance from either a path or label.
   def self.from(path_or_label)
-    return nil unless path_or_label =~ /homebrew\.mxcl\.([^\.]+)(\.plist)?\z/
+    return unless path_or_label =~ /homebrew\.mxcl\.([\w+-.@]+)(\.plist)?\z/
     begin
       new(Formulary.factory($1))
     rescue
