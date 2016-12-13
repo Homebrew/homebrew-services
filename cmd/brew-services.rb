@@ -142,8 +142,12 @@ module ServicesCli
         end
 
         # Check the exit code of the service, might indicate an error
-        if formula[:status] == :started && service.exit_code.nonzero?
-          formula[:status] = :error
+        if formula[:status] == :started
+          if service.unknown_status?
+            formula[:status] = :unknown
+          elsif service.error?
+            formula[:status] = :error
+          end
         end
 
         formula
@@ -165,6 +169,9 @@ module ServicesCli
             "#{Tty.green}started#{Tty.reset}"
           when :stopped
             "stopped"
+          when :unknown
+            # For consistency showing unknown state as started in yellow colour
+            "#{Tty.yellow}started#{Tty.reset}"
           when :error
             "#{Tty.red}error  #{Tty.reset}"
           end
@@ -381,6 +388,14 @@ class Service
     nil
   end
 
+  def error?
+    !pid || pid.zero? || !exit_code || exit_code.nonzero?
+  end
+
+  def unknown_status?
+    !status || status.empty?
+  end
+
   # Get current PID of daemon process from launchctl.
   def pid
     return $1.to_i if status =~ status_regexp
@@ -423,11 +438,11 @@ class Service
   private
 
   def status
-    `#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null`.chomp
+    @status ||= `#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null`.chomp
   end
 
   def status_regexp
-    /\A([\d\-]+)\s+([\d]+)\s+#{label}\z/
+    /\A([\d-]+)\s+([\d]+)\s+#{label}\z/
   end
 end
 
