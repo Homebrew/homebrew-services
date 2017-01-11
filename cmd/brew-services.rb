@@ -165,16 +165,17 @@ module ServicesCli
                   "Name", "Status", "User", "Plist")
       formulae.each do |formula|
         status = case formula[:status]
-          when :started
-            "#{Tty.green}started#{Tty.reset}"
-          when :stopped
-            "stopped"
-          when :unknown
-            # For consistency showing unknown state as started in yellow colour
+        when :started then "#{Tty.green}started#{Tty.reset}"
+        when :stopped then "stopped"
+        when :error   then "#{Tty.red}error  #{Tty.reset}"
+        when :unknown
+          if ENV["HOMEBREW_DEVELOPER"]
+            "#{Tty.yellow}unknown#{Tty.reset}"
+          else
+            # For backwards-compatability showing unknown state as started in yellow colour
             "#{Tty.yellow}started#{Tty.reset}"
-          when :error
-            "#{Tty.red}error  #{Tty.reset}"
           end
+        end
 
         puts format("%-#{longest_name}.#{longest_name}s %s %-#{longest_user}.#{longest_user}s %s",
                     formula[:name],
@@ -389,11 +390,11 @@ class Service
   end
 
   def error?
-    !pid || pid.zero? || !exit_code || exit_code.nonzero?
+    !exit_code || exit_code.nonzero?
   end
 
   def unknown_status?
-    !status || status.empty?
+    !status || status.empty? || !pid || pid.zero?
   end
 
   # Get current PID of daemon process from launchctl.
