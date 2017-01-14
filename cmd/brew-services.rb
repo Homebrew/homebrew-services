@@ -263,7 +263,7 @@ module ServicesCli
         temp.close
 
         safe_system launchctl, "load", "-w", service.dest.to_s
-        $?.to_i.nonzero? ? odie("Failed to start `#{service.name}`") : ohai("Successfully started `#{service.name}` (label: #{service.label})")
+        $?.to_i.nonzero? ? odie("Failed to start `#{service.name}`") : ohai("Successfully requested start of `#{service.name}` (label: #{service.label})")
       end
     end
 
