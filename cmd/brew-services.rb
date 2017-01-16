@@ -110,7 +110,7 @@ module ServicesCli
       when "cleanup", "clean", "cl", "rm" then cleanup
       when "list", "ls" then list
       when "restart", "relaunch", "reload", "r" then check(target) && restart(target)
-      when "run" then check(target) && run(target, custom_plist)
+      when "run" then check(target) && run(target)
       when "start", "launch", "load", "s", "l" then check(target) && start(target, custom_plist)
       when "stop", "unload", "terminate", "term", "t", "u" then check(target) && stop(target)
       else
@@ -227,23 +227,30 @@ module ServicesCli
         was_installed = service.started?
         
         stop(service) if service.loaded?
-        start(service) if was_installed
-        run(service) unless was_installed
+        
+        if was_installed
+          start(service)
+        else
+          run(service)
+        end
       end
     end
     
     # Run a service.
     def run(target)
-      if target.is_a?(Service)
-        if target.loaded?
-          puts "Service `#{target.name}` already running, use `#{bin} restart #{target.name}` to restart."
-          return
-        end
+      if target.is_a?(Service) && target.loaded?
+        puts "Service `#{target.name}` already running, use `#{bin} restart #{target.name}` to restart."
+        return
       end
       
       Array(target).each do |service|      
         safe_system launchctl, "load", "-w", target.plist
-        $?.to_i.nonzero? ? odie("Failed to start `#{service.name}`") : ohai("Successfully started `#{service.name}` (label: #{service.label})")
+        
+        if $?.to_i.nonzero?
+          odie("Failed to start `#{service.name}`")
+        else
+          ohai("Successfully started `#{service.name}` (label: #{service.label})")
+        end
       end
     end
 
@@ -289,7 +296,12 @@ module ServicesCli
         temp.close
 
         safe_system launchctl, "load", "-w", service.dest.to_s
-        $?.to_i.nonzero? ? odie("Failed to start `#{service.name}`") : ohai("Successfully started `#{service.name}` (label: #{service.label})")
+        
+        if $?.to_i.nonzero?
+          odie("Failed to start `#{service.name}`")
+        else
+          ohai("Successfully started `#{service.name}` (label: #{service.label})")
+        end
       end
     end
 
