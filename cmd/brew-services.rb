@@ -15,13 +15,16 @@
 #:    [<sudo>] `brew services` `list`
 #:    List all running services for the current user (or <root>)
 #:
-#:    [<sudo>] `brew services` `start` <formula>
+#:    [<sudo>] `brew services` `run` <formula|--all>
+#:    Run the service <formula> without starting at login (or boot).
+#:
+#:    [<sudo>] `brew services` `start` <formula|--all>
 #:    Install and start the service <formula> at login (or <boot>).
 #:
 #:    [<sudo>] `brew services` `stop` <formula|--all>
 #:    Stop the service <formula> after it was launched at login (or <boot>).
 #:
-#:    [<sudo>] `brew services` `restart` <formula>
+#:    [<sudo>] `brew services` `restart` <formula|--all>
 #:    Stop (if necessary), install and start the service <formula> at login (or <boot>).
 #:
 #:    [<sudo>] `brew services` `cleanup`
@@ -107,6 +110,7 @@ module ServicesCli
       when "cleanup", "clean", "cl", "rm" then cleanup
       when "list", "ls" then list
       when "restart", "relaunch", "reload", "r" then check(target) && restart(target)
+      when "run" then check(target) && run(target, custom_plist)
       when "start", "launch", "load", "s", "l" then check(target) && start(target, custom_plist)
       when "stop", "unload", "terminate", "term", "t", "u" then check(target) && stop(target)
       else
@@ -139,6 +143,10 @@ module ServicesCli
           formula[:status] = :started
           formula[:user] = ServicesCli.user
           formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
+        elsif service.loaded?
+          formula[:status] = :started
+          formula[:user] = ServicesCli.user
+          formula[:plist] = service.plist
         end
 
         # Check the exit code of the service, might indicate an error
@@ -213,11 +221,29 @@ module ServicesCli
       puts "All #{root? ? "root" : "user-space"} services OK, nothing cleaned..." if cleaned.empty?
     end
 
-    # Stop if loaded, then start again.
+    # Stop if loaded, then start or run again.
     def restart(target)
       Array(target).each do |service|
+        was_installed = service.started?
+        
         stop(service) if service.loaded?
-        start(service)
+        start(service) if was_installed
+        run(service) unless was_installed
+      end
+    end
+    
+    # Run a service.
+    def run(target)
+      if target.is_a?(Service)
+        if target.loaded?
+          puts "Service `#{target.name}` already running, use `#{bin} restart #{target.name}` to restart."
+          return
+        end
+      end
+      
+      Array(target).each do |service|      
+        safe_system launchctl, "load", "-w", target.plist
+        $?.to_i.nonzero? ? odie("Failed to start `#{service.name}`") : ohai("Successfully started `#{service.name}` (label: #{service.label})")
       end
     end
 
