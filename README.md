@@ -24,6 +24,12 @@ $ brew install mysql
 $ brew services start mysql
 ```
 
+Run service. Don't start at login (nor boot):
+
+```
+$ brew services run mysql
+```
+
 Stop service mysql:
 
 ```
@@ -50,8 +56,8 @@ $ sudo brew services start dnsmasq
 $ brew services list
 ```
 
-### Start/stop/restart all available services ###
+### Run/start/stop/restart all available services ###
 
 ```
-$ brew services start|stop|restart --all
+$ brew services run|start|stop|restart --all
 ```
