@@ -244,7 +244,7 @@ module ServicesCli
       end
       
       Array(target).each do |service|      
-        safe_system launchctl, "load", "-w", target.plist
+        safe_system launchctl, "load", "-w", service.plist
         
         if $?.to_i.nonzero?
           odie("Failed to start `#{service.name}`")
