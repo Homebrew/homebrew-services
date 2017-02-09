@@ -13,7 +13,7 @@ __brew_services_commands() {
     'cleanup:Get rid of stale services and unused plists'
     'list:List all services managed by brew services'
     'restart:Gracefully restart selected service'
-    'run:Run selected service. Don't start at login (nor boot).'
+    "run:Run selected service. Don't start at login (nor boot)."
     'start:Start selected service'
     'stop:Stop selected service'
   )
