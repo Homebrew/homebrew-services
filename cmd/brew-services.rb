@@ -224,28 +224,28 @@ module ServicesCli
     # Stop if loaded, then start or run again.
     def restart(target)
       Array(target).each do |service|
-        was_installed = service.started?
-        
+        was_run = service.loaded? && !service.started?
+
         stop(service) if service.loaded?
-        
-        if was_installed
-          start(service)
-        else
+
+        if was_run
           run(service)
+        else
+          start(service)
         end
       end
     end
-    
+
     # Run a service.
     def run(target)
       if target.is_a?(Service) && target.loaded?
         puts "Service `#{target.name}` already running, use `#{bin} restart #{target.name}` to restart."
         return
       end
-      
-      Array(target).each do |service|      
+
+      Array(target).each do |service|
         safe_system launchctl, "load", "-w", service.plist
-        
+
         if $?.to_i.nonzero?
           odie("Failed to start `#{service.name}`")
         else
@@ -296,7 +296,7 @@ module ServicesCli
         temp.close
 
         safe_system launchctl, "load", "-w", service.dest.to_s
-        
+
         if $?.to_i.nonzero?
           odie("Failed to start `#{service.name}`")
         else
