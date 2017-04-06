@@ -237,7 +237,6 @@ module ServicesCli
       end
     end
 
-    # "load" a plist
     def launchctl_load(plist, _function, service)
       if root?
         domain_target = "system"
@@ -249,7 +248,6 @@ module ServicesCli
         # This syntax was deprecated in Yosemite
         safe_system launchctl, "load", "-w", plist
       else
-        # New syntax has improved errr-handling.
         safe_system launchctl, "enable", "#{domain_target}/#{service.label}"
         if $?.to_i.nonzero?
           odie("Failed to enable `#{service.name}`")
