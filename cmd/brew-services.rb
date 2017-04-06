@@ -237,7 +237,7 @@ module ServicesCli
       end
     end
 
-    # "load" a plist, the newfangled way
+    # "load" a plist
     def launchctl_load(plist, _function, service)
       if root?
         domain_target = "system"
@@ -245,12 +245,18 @@ module ServicesCli
         domain_target = "gui/#{Process.uid}"
       end
 
-      safe_system launchctl, "enable", "#{domain_target}/#{service.label}"
-      if $?.to_i.nonzero?
-        odie("Failed to enable `#{service.name}`")
-      end
+      if MacOS.version < :yosemite
+        # This syntax was deprecated in Yosemite
+        safe_system launchctl, "load", "-w", plist
+      else
+        # New syntax has improved errr-handling.
+        safe_system launchctl, "enable", "#{domain_target}/#{service.label}"
+        if $?.to_i.nonzero?
+          odie("Failed to enable `#{service.name}`")
+        end
 
-      safe_system launchctl, "bootstrap", domain_target, plist
+        safe_system launchctl, "bootstrap", domain_target, plist
+      end
       if $?.to_i.nonzero?
         odie("Failed to start `#{service.name}`")
       else
