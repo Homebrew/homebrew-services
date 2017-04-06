@@ -237,7 +237,7 @@ module ServicesCli
       end
     end
 
-    def launchctl_load(plist, _function, service)
+    def launchctl_load(plist, function, service)
       if root?
         domain_target = "system"
       else
@@ -252,7 +252,7 @@ module ServicesCli
         safe_system launchctl, "load", "-w", plist
       end
 
-      ohai("Successfully started `#{service.name}` (label: #{service.label})")
+      ohai("Successfully #{function} `#{service.name}` (label: #{service.label})")
 
     end
 
