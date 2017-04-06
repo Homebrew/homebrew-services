@@ -1,5 +1,6 @@
-#:  * `services`
-#:    Easily start and stop formulae via launchctl
+#:  * `services` [`-v`|`--verbose`] [list | run | start | stop | restart | cleanup] [...]
+#:    Easily start and stop formulae via launchctl.
+#:    With `-v` or `--verbose`, print more detail.
 #:
 #:    Integrates Homebrew formulae with OS X's `launchctl` manager. Services can be
 #:    added to either `/Library/LaunchDaemons` or `~/Library/LaunchAgents`.
@@ -236,6 +237,24 @@ module ServicesCli
       end
     end
 
+    def launchctl_load(plist, function, service)
+      if root?
+        domain_target = "system"
+      else
+        domain_target = "gui/#{Process.uid}"
+      end
+
+      if MacOS.version >= :yosemite
+        safe_system launchctl, "enable", "#{domain_target}/#{service.label}"
+        safe_system launchctl, "bootstrap", domain_target, plist
+      else
+        # This syntax was deprecated in Yosemite
+        safe_system launchctl, "load", "-w", plist
+      end
+
+      ohai("Successfully #{function} `#{service.name}` (label: #{service.label})")
+    end
+
     # Run a service.
     def run(target)
       if target.is_a?(Service) && target.loaded?
@@ -244,13 +263,7 @@ module ServicesCli
       end
 
       Array(target).each do |service|
-        safe_system launchctl, "load", "-w", service.plist
-
-        if $?.to_i.nonzero?
-          odie("Failed to start `#{service.name}`")
-        else
-          ohai("Successfully started `#{service.name}` (label: #{service.label})")
-        end
+        launchctl_load(service.plist, "ran", service)
       end
     end
 
@@ -295,13 +308,7 @@ module ServicesCli
         # Clear tempfile.
         temp.close
 
-        safe_system launchctl, "load", "-w", service.dest.to_s
-
-        if $?.to_i.nonzero?
-          odie("Failed to start `#{service.name}`")
-        else
-          ohai("Successfully started `#{service.name}` (label: #{service.label})")
-        end
+        launchctl_load(service.dest.to_s, "started", service)
       end
     end
 
