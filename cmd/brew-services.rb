@@ -237,6 +237,16 @@ module ServicesCli
       end
     end
 
+    # "load" a plist, classically
+    def launchctl_load(plist, function, service)
+        safe_system launchctl, "load", "-w", plist
+        if $?.to_i.nonzero?
+          odie("Failed to start `#{service.name}`")
+        else
+          ohai("Successfully started `#{service.name}` (label: #{service.label})")
+        end
+    end
+
     # Run a service.
     def run(target)
       if target.is_a?(Service) && target.loaded?
@@ -245,13 +255,7 @@ module ServicesCli
       end
 
       Array(target).each do |service|
-        safe_system launchctl, "load", "-w", service.plist
-
-        if $?.to_i.nonzero?
-          odie("Failed to start `#{service.name}`")
-        else
-          ohai("Successfully started `#{service.name}` (label: #{service.label})")
-        end
+        launchctl_load(service.plist, "ran", service)
       end
     end
 
@@ -296,13 +300,7 @@ module ServicesCli
         # Clear tempfile.
         temp.close
 
-        safe_system launchctl, "load", "-w", service.dest.to_s
-
-        if $?.to_i.nonzero?
-          odie("Failed to start `#{service.name}`")
-        else
-          ohai("Successfully started `#{service.name}` (label: #{service.label})")
-        end
+        launchctl_load(service.dest.to_s, "started", service)
       end
     end
 
