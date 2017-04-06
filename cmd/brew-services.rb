@@ -246,20 +246,14 @@ module ServicesCli
 
       if MacOS.version >= :yosemite
         safe_system launchctl, "enable", "#{domain_target}/#{service.label}"
-        if $?.to_i.nonzero?
-          odie("Failed to enable `#{service.name}`")
-        end
-
         safe_system launchctl, "bootstrap", domain_target, plist
       else
         # This syntax was deprecated in Yosemite
         safe_system launchctl, "load", "-w", plist
       end
-      if $?.to_i.nonzero?
-        odie("Failed to start `#{service.name}`")
-      else
-        ohai("Successfully started `#{service.name}` (label: #{service.label})")
-      end
+
+      ohai("Successfully started `#{service.name}` (label: #{service.label})")
+
     end
 
     # Run a service.
