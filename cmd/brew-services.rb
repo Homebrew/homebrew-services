@@ -244,16 +244,16 @@ module ServicesCli
         domain_target = "gui/#{Process.uid}"
       end
 
-      if MacOS.version < :yosemite
-        # This syntax was deprecated in Yosemite
-        safe_system launchctl, "load", "-w", plist
-      else
+      if MacOS.version >= :yosemite
         safe_system launchctl, "enable", "#{domain_target}/#{service.label}"
         if $?.to_i.nonzero?
           odie("Failed to enable `#{service.name}`")
         end
 
         safe_system launchctl, "bootstrap", domain_target, plist
+      else
+        # This syntax was deprecated in Yosemite
+        safe_system launchctl, "load", "-w", plist
       end
       if $?.to_i.nonzero?
         odie("Failed to start `#{service.name}`")
