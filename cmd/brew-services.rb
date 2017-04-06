@@ -253,7 +253,6 @@ module ServicesCli
       end
 
       ohai("Successfully #{function} `#{service.name}` (label: #{service.label})")
-
     end
 
     # Run a service.
