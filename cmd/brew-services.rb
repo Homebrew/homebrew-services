@@ -238,13 +238,24 @@ module ServicesCli
     end
 
     # "load" a plist, classically
-    def launchctl_load(plist, function, service)
-        safe_system launchctl, "load", "-w", plist
-        if $?.to_i.nonzero?
-          odie("Failed to start `#{service.name}`")
-        else
-          ohai("Successfully started `#{service.name}` (label: #{service.label})")
-        end
+    def launchctl_load(plist, _function, service)
+      if root?
+        domain_target = "system"
+      else
+        domain_target = "gui/#{Process.uid}"
+      end
+
+      safe_system launchctl, "enable", "#{domain_target}/#{service.label}"
+      if $?.to_i.nonzero?
+        odie("Failed to enable `#{service.name}`")
+      end
+
+      safe_system launchctl, "bootstrap", domain_target, plist
+      if $?.to_i.nonzero?
+        odie("Failed to start `#{service.name}`")
+      else
+        ohai("Successfully started `#{service.name}` (label: #{service.label})")
+      end
     end
 
     # Run a service.
