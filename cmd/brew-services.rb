@@ -1,5 +1,6 @@
-#:  * `services`
-#:    Easily start and stop formulae via launchctl
+#:  * `services` [`-v`|`--verbose`] [list | run | start | stop | restart | cleanup] [...]
+#:    Easily start and stop formulae via launchctl.
+#:    With `-v` or `--verbose`, print more detail.
 #:
 #:    Integrates Homebrew formulae with OS X's `launchctl` manager. Services can be
 #:    added to either `/Library/LaunchDaemons` or `~/Library/LaunchAgents`.
