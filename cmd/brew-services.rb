@@ -237,7 +237,7 @@ module ServicesCli
       end
     end
 
-    # "load" a plist, classically
+    # "load" a plist, the newfangled way
     def launchctl_load(plist, _function, service)
       if root?
         domain_target = "system"
