@@ -170,7 +170,7 @@ module ServicesCli
       longest_name = [formulae.max_by { |formula| formula[:name].length }[:name].length, 4].max
       longest_user = [formulae.map { |formula| formula[:user].nil? ? 4 : formula[:user].length }.max, 4].max
 
-      puts format("#{Tty.white}%-#{longest_name}.#{longest_name}s %-7.7s %-#{longest_user}.#{longest_user}s %s#{Tty.reset}",
+      puts format("#{Tty.bold}%-#{longest_name}.#{longest_name}s %-7.7s %-#{longest_user}.#{longest_user}s %s#{Tty.reset}",
                   "Name", "Status", "User", "Plist")
       formulae.each do |formula|
         status = case formula[:status]
@@ -202,7 +202,7 @@ module ServicesCli
       running.each do |label|
         if svc = Service.from(label)
           unless svc.dest.file?
-            puts format("%-15.15s #{Tty.white}stale#{Tty.reset} => killing service...", svc.name)
+            puts format("%-15.15s #{Tty.bold}stale#{Tty.reset} => killing service...", svc.name)
             kill(svc)
             cleaned << label
           end
