@@ -2,7 +2,7 @@
 #:    Easily start and stop formulae via launchctl.
 #:    With `-v` or `--verbose`, print more detail.
 #:
-#:    Integrates Homebrew formulae with OS X's `launchctl` manager. Services can be
+#:    Integrates Homebrew formulae with macOS' `launchctl` manager. Services can be
 #:    added to either `/Library/LaunchDaemons` or `~/Library/LaunchAgents`.
 #:    Basically, items in `/Library/LaunchDaemons` are started at boot, while those
 #:    in `~/Library/LaunchAgents` are started at login.
@@ -48,9 +48,9 @@ module ServicesCli
       Process.uid.zero?
     end
 
-    # Current user, i.e., owner of `HOMEBREW_CELLAR`.
+    # Current user.
     def user
-      @user ||= `/usr/bin/stat -f '%Su' #{HOMEBREW_CELLAR} 2>/dev/null`.chomp || `/usr/bin/whoami`.chomp
+      @user ||= `/usr/bin/whoami`.chomp
     end
 
     # Run at boot.
