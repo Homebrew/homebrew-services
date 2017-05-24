@@ -20,13 +20,13 @@
 #:    Run the service <formula> without starting at login (or boot).
 #:
 #:    [<sudo>] `brew services` `start` <formula|--all>
-#:    Install and start the service <formula> at login (or <boot>).
+#:    Start the service <formula> immediately and register it to launch at login (or <boot>).
 #:
 #:    [<sudo>] `brew services` `stop` <formula|--all>
-#:    Stop the service <formula> after it was launched at login (or <boot>).
+#:    Stop the service <formula> immediately and unregister it from launching at login (or <boot>).
 #:
 #:    [<sudo>] `brew services` `restart` <formula|--all>
-#:    Stop (if necessary), install and start the service <formula> at login (or <boot>).
+#:    Stop (if necessary) and start the service immediately and register it to launch at login (or <boot>).
 #:
 #:    [<sudo>] `brew services` `cleanup`
 #:    Remove all unused services.
