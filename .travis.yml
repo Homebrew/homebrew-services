@@ -23,6 +23,7 @@ install:
   - brew install mysql
 
 script:
+  - brew style "$TRAVIS_REPO_SLUG"
   # Test start command
   - brew services start mysql
   - brew services list | grep mysql
