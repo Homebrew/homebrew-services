@@ -70,6 +70,7 @@ module ServicesCli
 
     # Find all currently running services via launchctl list.
     def running
+      # TODO: find replacement for deprecated "list"
       `#{launchctl} list | grep homebrew.mxcl`.chomp.split("\n").map { |svc| $1 if svc =~ /(homebrew\.mxcl\..+)\z/ }.compact
     end
 
@@ -237,13 +238,15 @@ module ServicesCli
       end
     end
 
-    def launchctl_load(plist, function, service)
+    def domain_target
       if root?
-        domain_target = "system"
+        "system"
       else
-        domain_target = "gui/#{Process.uid}"
+        "gui/#{Process.uid}"
       end
+    end
 
+    def launchctl_load(plist, function, service)
       if MacOS.version >= :yosemite
         safe_system launchctl, "enable", "#{domain_target}/#{service.label}"
         safe_system launchctl, "bootstrap", domain_target, plist
@@ -326,8 +329,18 @@ module ServicesCli
       Array(target).select(&:loaded?).each do |service|
         if service.dest.exist?
           puts "Stopping `#{service.name}`... (might take a while)"
-          safe_system launchctl, "unload", "-w", service.dest.to_s
-          $?.to_i.nonzero? ? odie("Failed to stop `#{service.name}`") : ohai("Successfully stopped `#{service.name}` (label: #{service.label})")
+          if MacOS.version >= :yosemite
+            quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
+            while $?.to_i == 9216
+              sleep(5)
+              quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
+            end
+            safe_system launchctl, "disable", "#{domain_target}/#{service.label}"
+          else
+            # This syntax was deprecated in Yosemite
+            safe_system launchctl, "unload", "-w", service.dest.to_s
+          end
+          ohai "Successfully stopped `#{service.name}` (label: #{service.label})"
         else
           puts "Stopping stale service `#{service.name}`... (might take a while)"
           kill(service)
@@ -336,15 +349,21 @@ module ServicesCli
       end
     end
 
-    # Kill a service that has no plist file by issuing `launchctl remove`.
-    def kill(svc)
-      safe_system launchctl, "remove", svc.label
-      odie("Failed to remove `#{svc.name}`, try again?") unless $?.to_i.zero?
-      while svc.loaded?
-        puts "  ...checking status"
-        sleep(5)
+    # Kill a service that has no plist file.
+    def kill(service)
+      if MacOS.version >= :yosemite
+        quiet_system launchctl, "kill", "SIGTERM", "#{domain_target}/#{service.label}"
+      else
+        safe_system launchctl, "remove", service.label
       end
-      ohai "Successfully stopped `#{svc.name}` via #{svc.label}"
+      while service.loaded?
+        sleep(5)
+        break if service.loaded?
+        if MacOS.version >= :yosemite
+          quiet_system launchctl, "kill", "SIGKILL", "#{domain_target}/#{service.label}"
+        end
+      end
+      ohai "Successfully stopped `#{service.name}` via #{service.label}"
     end
   end
 end
@@ -413,6 +432,7 @@ class Service
 
   # Returns `true` if the service is loaded, else false.
   def loaded?
+    # TODO: find replacement for deprecated "list"
     `#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null`.chomp =~ /#{label}\z/
   end
 

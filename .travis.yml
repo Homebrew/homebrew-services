@@ -32,7 +32,7 @@ script:
   # Test stop command
   - brew services stop mysql
   - sleep 5
-  - test ! `launchctl list | grep mysql`
+  - if launchctl list | grep mysql; then false; else true; fi
   # Test run command
   - brew services run mysql
   - sleep 5
