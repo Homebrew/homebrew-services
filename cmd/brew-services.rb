@@ -248,7 +248,9 @@ module ServicesCli
 
     def launchctl_load(plist, function, service)
       if MacOS.version >= :yosemite
-        safe_system launchctl, "enable", "#{domain_target}/#{service.label}"
+        unless function == "ran"
+          safe_system launchctl, "enable", "#{domain_target}/#{service.label}"
+        end
         safe_system launchctl, "bootstrap", domain_target, plist
       else
         # This syntax was deprecated in Yosemite
@@ -327,22 +329,21 @@ module ServicesCli
       end
 
       Array(target).select(&:loaded?).each do |service|
-        if service.dest.exist?
-          puts "Stopping `#{service.name}`... (might take a while)"
-          if MacOS.version >= :yosemite
+        puts "Stopping `#{service.name}`... (might take a while)"
+        if MacOS.version >= :yosemite
+          quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
+          while $?.to_i == 9216
+            sleep(5)
             quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
-            while $?.to_i == 9216
-              sleep(5)
-              quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
-            end
-            safe_system launchctl, "disable", "#{domain_target}/#{service.label}"
-          else
+          end
+        end
+        if service.dest.exist?
+          unless MacOS.version >= :yosemite
             # This syntax was deprecated in Yosemite
             safe_system launchctl, "unload", "-w", service.dest.to_s
           end
           ohai "Successfully stopped `#{service.name}` (label: #{service.label})"
-        else
-          puts "Stopping stale service `#{service.name}`... (might take a while)"
+        elsif service.loaded?
           kill(service)
         end
         rm service.dest if service.dest.exist?
