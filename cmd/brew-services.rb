@@ -71,7 +71,7 @@ module ServicesCli
     # Find all currently running services via launchctl list.
     def running
       # TODO: find replacement for deprecated "list"
-      `#{launchctl} list | grep homebrew.mxcl`.chomp.split("\n").map { |svc| $1 if svc =~ /(homebrew\.mxcl\..+)\z/ }.compact
+      `#{launchctl} list | grep homebrew.mxcl`.chomp.split("\n").map { |svc| Regexp.last_match(1) if svc =~ /(homebrew\.mxcl\..+)\z/ }.compact
     end
 
     # Check if running as Homebrew and load required libraries, et al.
@@ -332,7 +332,7 @@ module ServicesCli
         puts "Stopping `#{service.name}`... (might take a while)"
         if MacOS.version >= :yosemite
           quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
-          while $?.to_i == 9216
+          while $CHILD_STATUS.to_i == 9216
             sleep(5)
             quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
           end
@@ -379,7 +379,7 @@ class Service
   def self.from(path_or_label)
     return unless path_or_label =~ /homebrew\.mxcl\.([\w+-.@]+)(\.plist)?\z/
     begin
-      new(Formulary.factory($1))
+      new(Formulary.factory(Regexp.last_match(1)))
     rescue
       nil
     end
@@ -465,11 +465,11 @@ class Service
 
   # Get current PID of daemon process from launchctl.
   def pid
-    return $1.to_i if status =~ status_regexp
+    return Regexp.last_match(1).to_i if status =~ status_regexp
   end
 
   def exit_code
-    return $2.to_i if status =~ status_regexp
+    return Regexp.last_match(2).to_i if status =~ status_regexp
   end
 
   # Generate that plist file, dude.
@@ -486,7 +486,7 @@ class Service
     end
 
     # Replace "template" variables and ensure label is always, always homebrew.mxcl.<formula>
-    data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) { |_m| formula.send($1).to_s if formula.respond_to?($1) }.gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
+    data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) { |_m| formula.send(Regexp.last_match(1)).to_s if formula.respond_to?(Regexp.last_match(1)) }.gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
 
     # Always remove the "UserName" as it doesn't work since 10.11.5
     if data =~ %r{<key>UserName</key>}
