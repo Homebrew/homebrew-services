@@ -309,6 +309,7 @@ module ServicesCli
         rm service.dest if service.dest.exist?
         service.dest_dir.mkpath unless service.dest_dir.directory?
         cp temp.path, service.dest
+        chmod 0644, service.dest
 
         # Clear tempfile.
         temp.close
