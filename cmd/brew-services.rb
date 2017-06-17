@@ -331,7 +331,8 @@ module ServicesCli
 
       Array(target).select(&:loaded?).each do |service|
         puts "Stopping `#{service.name}`... (might take a while)"
-        if MacOS.version >= :yosemite
+        # This command doesn't exist in Yosemite.
+        if MacOS.version >= :el_capitan
           quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
           while $CHILD_STATUS.to_i == 9216
             sleep(5)
@@ -339,8 +340,9 @@ module ServicesCli
           end
         end
         if service.dest.exist?
-          unless MacOS.version >= :yosemite
-            # This syntax was deprecated in Yosemite
+          unless MacOS.version >= :el_capitan
+            # This syntax was deprecated in Yosemite but there's no alternative
+            # command (bootout) until El Capitan.
             safe_system launchctl, "unload", "-w", service.dest.to_s
           end
           ohai "Successfully stopped `#{service.name}` (label: #{service.label})"
