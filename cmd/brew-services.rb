@@ -262,9 +262,14 @@ module ServicesCli
 
     # Run a service.
     def run(target)
-      if target.is_a?(Service) && target.loaded?
-        puts "Service `#{target.name}` already running, use `#{bin} restart #{target.name}` to restart."
-        return
+      if target.is_a?(Service)
+        if target.loaded?
+          puts "Service `#{target.name}` already running, use `#{bin} restart #{target.name}` to restart."
+          return
+        elsif root?
+          puts "Service `#{target.name}` cannot be run (but can be started) as root."
+          return
+        end
       end
 
       Array(target).each do |service|
