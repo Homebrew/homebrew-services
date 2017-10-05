@@ -459,7 +459,7 @@ class Service
 
   def started_as
     return "root" if started?(as: :root)
-    return ServicesCli.user if started?(as: :user)
+    return ENV["HOME"].sub("/Users/", "") if started?(as: :user)
     nil
   end
 
