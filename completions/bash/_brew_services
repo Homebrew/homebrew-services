@@ -1,0 +1,35 @@
+#########################################################################
+# brew services completion
+#########################################################################
+
+# Complete brew services xxxxxxx
+_brew_services() {
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  local prv="$(__brewcomp_prev)"
+  case "$prv" in
+    start|stop|restart|cleanup)
+      # get list of agent plists, clean up with param expansion
+      local agents=( $HOME/Library/LaunchAgents/homebrew* )
+      agents=( "${agents[@]##*/homebrew.mxcl.}" )
+      agents=( "${agents[@]%.plist}" )
+      COMPREPLY=($(compgen -W "${agents[*]}" -- "$cur"))
+      ;;
+    *)
+      COMPREPLY=($(compgen -W "list run start stop restart cleanup" -- "$cur"))
+      ;;
+  esac
+}
+
+# Wrapper that might call _brew_services or might call _brew. Is there another
+# way to do this?
+_brew_with_services() {
+  if [ $COMP_CWORD -gt 1 ] && [ "${COMP_WORDS[1]}" = "services" ] ; then
+    # brew services xxx yyy zzz
+    _brew_services
+    return
+  fi
+  _brew
+}
+
+# turn it on
+complete -o bashdefault -o default -F _brew_with_services brew
