@@ -485,7 +485,7 @@ class Service
       data = data.read
     elsif data.respond_to?(:keys) && data.keys.include?(:url)
       require "open-uri"
-      data = open(data).read
+      data = URI.parse(data).read
     elsif !data
       odie "Could not read the plist for `#{name}`!"
     end
