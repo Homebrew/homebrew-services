@@ -1,63 +1,80 @@
-Homebrew Services
-=================
+# Homebrew Services
+
+Integrates Homebrew formulae with macOS' `launchctl` manager.
 
 [![Build Status](https://travis-ci.org/Homebrew/homebrew-services.svg?branch=master)](https://travis-ci.org/Homebrew/homebrew-services)
 
-Integrates Homebrew formulae with macOS's `launchctl` manager.
+## Requirements
 
-By default, plists are installed to `~/Library/LaunchAgents/` and run as the
-current user upon login.  When `brew services` is run as the root user, plists
-are installed to `/Library/LaunchDaemons/`, and run as the root user on boot.
+[Homebrew](https://github.com/Homebrew/brew) is used for installing the services.
 
-## Installation ##
+This does not work with Linuxbrew (so don't file Linux issues, please).
+
+## Install
+
+`brew services` is automatically installed when run.
+
+## Usage
+
+### Start
+
+Start the MySQL service at login with:
 
 ```
-brew tap homebrew/services
+brew services start mysql
 ```
 
-## Examples ##
-
-### Install and start service mysql at login ###
+Start the Dnsmasq service at boot with:
 
 ```
-$ brew install mysql
-$ brew services start mysql
+$ sudo brew services start dnsmasq
 ```
 
-Run service. Don't start at login (nor boot):
+Start all available services with:
+```
+$ brew services start --all
+```
+
+### Run
+
+Run the MySQL service but don't start it at login (nor boot) with:
 
 ```
 $ brew services run mysql
 ```
 
-Stop service mysql:
+### Stop
+
+Stop the MySQL service with:
 
 ```
 $ brew services stop mysql
 ```
 
-Restart service mysql:
+### Restart
+
+Restart the MySQL service with:
 
 ```
 $ brew services restart mysql
 ```
 
+### List
 
-### Install and start dnsmasq service at boot ###
-
-```
-$ brew install dnsmasq
-$ sudo brew services start dnsmasq
-```
-
-### List all services managed by `brew services` ###
+List all services managed by `brew services` with:
 
 ```
 $ brew services list
 ```
 
-### Run/start/stop/restart all available services ###
+### Cleanup
+
+Remove all unused services with:
 
 ```
-$ brew services run|start|stop|restart --all
+$ brew services list
 ```
+
+## Copyright
+
+Copyright (c) Homebrew maintainers. See [LICENSE.txt](https://github.com/Homebrew/homebrew-services/blob/master/LICENSE.txt) for details.

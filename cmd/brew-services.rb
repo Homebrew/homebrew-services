@@ -1,22 +1,10 @@
-#:  * `services` [`-v`|`--verbose`] [list | run | start | stop | restart | cleanup] [...]
-#:    Easily start and stop formulae via launchctl.
-#:    With `-v` or `--verbose`, print more detail.
+#:  * `services` <command>:
+#:    Integrates Homebrew formulae with macOS' `launchctl` manager.
 #:
-#:    Integrates Homebrew formulae with macOS' `launchctl` manager. Services can be
-#:    added to either `/Library/LaunchDaemons` or `~/Library/LaunchAgents`.
-#:    Basically, items in `/Library/LaunchDaemons` are started at boot, while those
-#:    in `~/Library/LaunchAgents` are started at login.
-#:
-#:    When started with `sudo`, it operates on `/Library/LaunchDaemons`; otherwise,
-#:    it operates on `~/Library/LaunchAgents`.
-#:
-#:    On `start` the plist file is generated and written to a `Tempfile`, and then
-#:    copied to the launch path (existing plists are overwritten).
-#:
-#:    [<sudo>] `brew services` `list`
+#:    [<sudo>] `brew services list`
 #:    List all running services for the current user (or <root>)
 #:
-#:    [<sudo>] `brew services` `run` <formula|--all>
+#:    [<sudo>] `brew services run` <formula|--all>
 #:    Run the service <formula> without starting at login (or boot).
 #:
 #:    [<sudo>] `brew services` `start` <formula|--all>
@@ -30,6 +18,9 @@
 #:
 #:    [<sudo>] `brew services` `cleanup`
 #:    Remove all unused services.
+#:
+#:    If `sudo` is passed, operate on `/Library/LaunchDaemons` (started at boot).
+#:    Otherwise, operate on `~/Library/LaunchAgents (started at login)`.
 
 unless defined? HOMEBREW_LIBRARY_PATH
   abort "Runtime error: Homebrew is required. Please start via `#{bin} ...`"
