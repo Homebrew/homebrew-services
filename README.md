@@ -72,7 +72,7 @@ $ brew services list
 Remove all unused services with:
 
 ```
-$ brew services list
+$ brew services cleanup
 ```
 
 ## Copyright
