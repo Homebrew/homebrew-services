@@ -118,7 +118,7 @@ module ServicesCli
 
   # List all available services with status, user, and path to the plist file.
   def list
-    formulae = available_services.map do |service|
+    formulae = available_services.sort_by(&:name).map do |service|
       formula = {
         name: service.formula.name,
         status: :stopped,
