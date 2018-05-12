@@ -74,7 +74,7 @@ module ServicesCli
 
   # All available services
   def available_services
-    Formula.installed.map { |formula| Service.new(formula) }.select(&:plist?)
+    Formula.installed.map { |formula| Service.new(formula) }.select(&:plist?).sort_by(&:name)
   end
 
   # Run and start the command loop.
@@ -118,7 +118,7 @@ module ServicesCli
 
   # List all available services with status, user, and path to the plist file.
   def list
-    formulae = available_services.sort_by(&:name).map do |service|
+    formulae = available_services.map do |service|
       formula = {
         name: service.formula.name,
         status: :stopped,
