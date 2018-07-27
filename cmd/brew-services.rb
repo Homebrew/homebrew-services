@@ -474,7 +474,7 @@ class Service
 
     if data.respond_to?(:file?) && data.file?
       data = data.read
-    elsif data.respond_to?(:keys) && data.keys.include?(:url)
+    elsif data.respond_to?(:keys) && data.key?(:url)
       require "open-uri"
       data = URI.parse(data).read
     elsif !data
