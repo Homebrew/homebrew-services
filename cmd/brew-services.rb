@@ -26,7 +26,8 @@ unless defined? HOMEBREW_LIBRARY_PATH
   abort "Runtime error: Homebrew is required. Please start via `#{bin} ...`"
 end
 
-module ServicesCli
+# TODO: refactor into multiple modules
+module ServicesCli # rubocop:disable Metrics/ModuleLength
   extend FileUtils
 
   module_function
@@ -160,8 +161,12 @@ module ServicesCli
     longest_name = [formulae.max_by { |formula| formula[:name].length }[:name].length, 4].max
     longest_user = [formulae.map { |formula| formula[:user].nil? ? 4 : formula[:user].length }.max, 4].max
 
-    puts format("#{Tty.bold}%-#{longest_name}.#{longest_name}s %-7.7s %-#{longest_user}.#{longest_user}s %s#{Tty.reset}",
-                "Name", "Status", "User", "Plist")
+    puts format("#{Tty.bold}%-#{longest_name}.#{longest_name}{name} %-7.7{status} " \
+                "%-#{longest_user}.#{longest_user}{user} %{plist}#{Tty.reset}",
+                name:   "Name",
+                status: "Status",
+                user:   "User",
+                plist:  "Plist")
     formulae.each do |formula|
       status = case formula[:status]
       when :started then "#{Tty.green}started#{Tty.reset}"
@@ -176,11 +181,12 @@ module ServicesCli
         end
       end
 
-      puts format("%-#{longest_name}.#{longest_name}s %s %-#{longest_user}.#{longest_user}s %s",
-                  formula[:name],
-                  status,
-                  formula[:user],
-                  formula[:plist])
+      puts format("%-#{longest_name}.#{longest_name}{name} %{status} " \
+                  "%-#{longest_user}.#{longest_user}{user} %{plist}",
+                  name:   formula[:name],
+                  status: status,
+                  user:   formula[:user],
+                  plist:  formula[:plist])
     end
   end
 
