@@ -301,7 +301,7 @@ module ServicesCli # rubocop:disable Metrics/ModuleLength
       end
     end
 
-    Array(target).each do |service|
+    Array(target).reject(&:loaded?).each do |service|
       temp = Tempfile.new(service.label)
       temp << service.generate_plist(custom_plist)
       temp.flush
