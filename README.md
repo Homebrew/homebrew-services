@@ -2,7 +2,7 @@
 
 Integrates Homebrew formulae with macOS' `launchctl` manager.
 
-[![Build Status](https://travis-ci.org/Homebrew/homebrew-services.svg?branch=master)](https://travis-ci.org/Homebrew/homebrew-services)
+[![Azure Pipelines](https://img.shields.io/vso/build/Homebrew/56a87eb4-3180-495a-9117-5ed6c79da737/4.svg)](https://dev.azure.com/Homebrew/Homebrew/_build/latest?definitionId=4)
 
 ## Requirements
 
@@ -20,59 +20,60 @@ This does not work with Linuxbrew (so don't file Linux issues, please).
 
 Start the MySQL service at login with:
 
-```
+```bash
 brew services start mysql
 ```
 
 Start the Dnsmasq service at boot with:
 
-```
-$ sudo brew services start dnsmasq
+```bash
+sudo brew services start dnsmasq
 ```
 
 Start all available services with:
-```
-$ brew services start --all
+
+```bash
+brew services start --all
 ```
 
 ### Run
 
 Run the MySQL service but don't start it at login (nor boot) with:
 
-```
-$ brew services run mysql
+```bash
+brew services run mysql
 ```
 
 ### Stop
 
 Stop the MySQL service with:
 
-```
-$ brew services stop mysql
+```bash
+brew services stop mysql
 ```
 
 ### Restart
 
 Restart the MySQL service with:
 
-```
-$ brew services restart mysql
+```bash
+brew services restart mysql
 ```
 
 ### List
 
 List all services managed by `brew services` with:
 
-```
-$ brew services list
+```bash
+brew services list
 ```
 
 ### Cleanup
 
 Remove all unused services with:
 
-```
-$ brew services cleanup
+```bash
+brew services cleanup
 ```
 
 ## Copyright

@@ -1,0 +1,27 @@
+jobs:
+- job: macOS
+  pool:
+    vmImage: xcode9-macos10.13
+  steps:
+    - bash: |
+        sudo xcode-select --switch /Applications/Xcode_10.app/Contents/Developer
+        brew update-reset
+        ln -s "$PWD" "/usr/local/Homebrew/Library/Taps/homebrew/homebrew-services"
+        export HOMEBREW_DEVELOPER="1"
+        brew style homebrew/services
+        brew install mysql
+        # Test start command
+        brew services start mysql
+        brew services list | grep mysql
+        sleep 5
+        mysql -uroot -e 'show databases'
+        # Test stop command
+        brew services stop mysql
+        sleep 5
+        if launchctl list | grep mysql; then false; else true; fi
+        # Test run command
+        brew services run mysql
+        sleep 5
+        mysql -uroot -e 'show databases'
+        brew services stop mysql
+      displayName: Tests
