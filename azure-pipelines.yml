@@ -4,6 +4,7 @@ jobs:
     vmImage: macOS-10.13
   steps:
     - bash: |
+        set -e
         sudo xcode-select --switch /Applications/Xcode_10.1.app/Contents/Developer
         brew update-reset
         ln -s "$PWD" "/usr/local/Homebrew/Library/Taps/homebrew/homebrew-services"
