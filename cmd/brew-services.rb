@@ -1,26 +1,35 @@
-#:  * `services` <command>:
-#:    Integrates Homebrew formulae with macOS' `launchctl` manager.
+#:  * `services` <subcommand>:
 #:
-#:    [`sudo`] `brew services list`:
-#:    List all running services for the current user (or root).
+#:  Manage background services with macOS' `launchctl`(1) daemon manager
 #:
-#:    [`sudo`] `brew services run` (<formula>|`--all`):
-#:    Run the service <formula> without registering to launch at login (or boot).
+#:       --all                           run <subcommand> on all services.
 #:
-#:    [`sudo`] `brew services start` (<formula>|`--all`):
-#:    Start the service <formula> immediately and register it to launch at login (or boot).
+#:  [`sudo`] `brew services list`
 #:
-#:    [`sudo`] `brew services stop` (<formula>|`--all`):
-#:    Stop the service <formula> immediately and unregister it from launching at login (or boot).
+#:  List all running services for the current user (or root).
 #:
-#:    [`sudo`] `brew services restart` (<formula>|`--all`):
-#:    Stop (if necessary) and start the service <formula> immediately and register it to launch at login (or boot).
+#:  [`sudo`] `brew services run` (<formula>|`--all`)
 #:
-#:    [`sudo`] `brew services cleanup`:
-#:    Remove all unused services.
+#:  Run the service <formula> without registering to launch at login (or boot).
 #:
-#:    If `sudo` is passed, operate on `/Library/LaunchDaemons` (started at boot).
-#:    Otherwise, operate on `~/Library/LaunchAgents` (started at login).
+#:  [`sudo`] `brew services start` (<formula>|`--all`)
+#:
+#:  Start the service <formula> immediately and register it to launch at login (or boot).
+#:
+#:  [`sudo`] `brew services stop` (<formula>|`--all`)
+#:
+#:  Stop the service <formula> immediately and unregister it from launching at login (or boot).
+#:
+#:  [`sudo`] `brew services restart` (<formula>|`--all`)
+#:
+#:  Stop (if necessary) and start the service <formula> immediately and register it to launch at login (or boot).
+#:
+#:  [`sudo`] `brew services cleanup`
+#:
+#:  Remove all unused services.
+#:
+#:  If `sudo` is passed, operate on `/Library/LaunchDaemons` (started at boot).
+#:  Otherwise, operate on `~/Library/LaunchAgents` (started at login).
 
 unless defined? HOMEBREW_LIBRARY_PATH
   abort "Runtime error: Homebrew is required. Please start via `#{bin} ...`"
