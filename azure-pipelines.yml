@@ -7,6 +7,7 @@ jobs:
         set -e
         sudo xcode-select --switch /Applications/Xcode_10.1.app/Contents/Developer
         brew update-reset
+        export HOMEBREW_NO_AUTO_UPDATE=1
         ln -s "$PWD" "/usr/local/Homebrew/Library/Taps/homebrew/homebrew-services"
         export HOMEBREW_DEVELOPER="1"
         brew style homebrew/services
