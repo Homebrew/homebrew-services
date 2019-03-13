@@ -35,6 +35,8 @@ unless defined? HOMEBREW_LIBRARY_PATH
   abort "Runtime error: Homebrew is required. Please start via `#{bin} ...`"
 end
 
+odie "brew services is supported only on macOS" unless OS.mac?
+
 # TODO: refactor into multiple modules
 module ServicesCli # rubocop:disable Metrics/ModuleLength
   extend FileUtils
@@ -219,6 +221,7 @@ module ServicesCli # rubocop:disable Metrics/ModuleLength
     # 2. Remove unused plist files.
     Dir[path + "homebrew.mxcl.*.plist"].each do |file|
       next if running.include?(File.basename(file).sub(/\.plist$/i, ""))
+
       puts "Removing unused plist #{file}"
       rm file
       cleaned << file
@@ -372,6 +375,7 @@ module ServicesCli # rubocop:disable Metrics/ModuleLength
     while service.loaded?
       sleep(5)
       break if service.loaded?
+
       if MacOS.version >= :yosemite
         quiet_system launchctl, "kill", "SIGKILL", "#{domain_target}/#{service.label}"
       end
@@ -389,6 +393,7 @@ class Service
   # Create a new `Service` instance from either a path or label.
   def self.from(path_or_label)
     return unless path_or_label =~ /homebrew\.mxcl\.([\w+-.@]+)(\.plist)?\z/
+
     begin
       new(Formulary.factory(Regexp.last_match(1)))
     rescue
@@ -463,6 +468,7 @@ class Service
   def started_as
     return "root" if started?(as: :root)
     return ENV["HOME"].sub("/Users/", "") if started?(as: :user)
+
     nil
   end
 
