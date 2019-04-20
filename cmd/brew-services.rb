@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #:  * `services` <subcommand>:
 #:
 #:  Manage background services with macOS' `launchctl`(1) daemon manager
