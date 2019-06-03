@@ -339,26 +339,32 @@ module ServicesCli # rubocop:disable Metrics/ModuleLength
         end
         next unless plist
 
-        program_location = plist["ProgramArguments"].first
-        next unless program_location
+        root_paths = []
+        if program_location = plist["ProgramArguments"].first
+          program_location_path = Pathname(program_location).realpath
+          root_paths += [
+            program_location_path,
+            program_location_path.parent.realpath,
+          ]
+        end
+        if formula = service.formula
+          root_paths += [
+            formula.opt_prefix,
+            formula.linked_keg,
+            formula.bin,
+            formula.sbin,
+          ]
+        end
+        root_paths = root_paths.sort.uniq.select(&:exist?)
 
-        program_location_path = Pathname(program_location).realpath
-        program_location_bin = program_location_path.parent.realpath
         opoo <<~EOS
           Taking root:admin ownership of some #{service.formula} paths:
-            #{program_location_bin}
-            #{program_location_path}
+            #{root_paths.join("\n  ")}
           This will require manual removal of these paths using `sudo rm` on
           brew upgrade/reinstall/uninstall.
         EOS
-        chown "root", "admin", [
-          program_location_bin,
-          program_location_path,
-        ]
-        chmod "+t", [
-          program_location_bin,
-          program_location_path,
-        ]
+        chown "root", "admin", root_paths
+        chmod "+t", root_paths
       end
 
       launchctl_load(service.dest.to_s, "started", service)
