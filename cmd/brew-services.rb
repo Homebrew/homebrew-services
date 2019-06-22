@@ -4,25 +4,26 @@
 #:
 #:  Manage background services with macOS' `launchctl`(1) daemon manager
 #:
+#:       -p, --pattern                   run <subcommand> on all services matching the pattern.
 #:       --all                           run <subcommand> on all services.
 #:
 #:  [`sudo`] `brew services list`
 #:
 #:  List all running services for the current user (or root).
 #:
-#:  [`sudo`] `brew services run` (<formula>|`--all`)
+#:  [`sudo`] `brew services run` (<formula>|`-p` <pattern>|`--all`)
 #:
 #:  Run the service <formula> without registering to launch at login (or boot).
 #:
-#:  [`sudo`] `brew services start` (<formula>|`--all`)
+#:  [`sudo`] `brew services start` (<formula>|`-p` <pattern>|`--all`)
 #:
 #:  Start the service <formula> immediately and register it to launch at login (or boot).
 #:
-#:  [`sudo`] `brew services stop` (<formula>|`--all`)
+#:  [`sudo`] `brew services stop` (<formula>|`-p` <pattern>|`--all`)
 #:
 #:  Stop the service <formula> immediately and unregister it from launching at login (or boot).
 #:
-#:  [`sudo`] `brew services restart` (<formula>|`--all`)
+#:  [`sudo`] `brew services restart` (<formula>|`-p` <pattern>|`--all`)
 #:
 #:  Stop (if necessary) and start the service <formula> immediately and register it to launch at login (or boot).
 #:
@@ -32,6 +33,8 @@
 #:
 #:  If `sudo` is passed, operate on `/Library/LaunchDaemons` (started at boot).
 #:  Otherwise, operate on `~/Library/LaunchAgents` (started at login).
+
+require "optparse"
 
 unless defined? HOMEBREW_LIBRARY_PATH
   abort "Runtime error: Homebrew is required. Please start via `#{bin} ...`"
@@ -99,13 +102,21 @@ module ServicesCli # rubocop:disable Metrics/ModuleLength
     end
 
     # Parse arguments.
-    act_on_all_services = ARGV.include?("--all")
+    options = {}
+
+    ::OptionParser.new do |opts|
+      opts.on("-p", "--pattern PATTERN") { |v| options[:pattern] = v }
+      opts.on("-a", "--all") { |v| options[:all] = v }
+    end.parse!
+
     cmd = ARGV.named[0]
     formula = ARGV.named[1]
     custom_plist = ARGV.named[2]
 
-    target = if act_on_all_services
+    target = if options[:all]
       available_services
+    elsif options[:pattern]
+      available_services.select { |service| service.name.match?(options[:pattern]) }
     elsif formula
       Service.new(Formulary.factory(formula))
     end
