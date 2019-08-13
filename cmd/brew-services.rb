@@ -40,7 +40,7 @@ end
 odie "brew services is supported only on macOS" unless OS.mac?
 
 # TODO: refactor into multiple modules
-module ServicesCli # rubocop:disable Metrics/ModuleLength
+module ServicesCli
   extend FileUtils
 
   module_function
@@ -491,7 +491,7 @@ class Service
   # Returns `true` if the service is loaded, else false.
   def loaded?
     # TODO: find replacement for deprecated "list"
-    `#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null`.chomp =~ /#{label}\z/
+    `#{ServicesCli.launchctl} list | grep '#{label}$' 2>/dev/null`.chomp =~ /#{label}\z/
   end
 
   # Returns `true` if service is started (.plist is present in LaunchDaemon or LaunchAgent path), else `false`
