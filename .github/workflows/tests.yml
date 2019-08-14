@@ -1,17 +1,29 @@
+name: GitHub Actions CI
+on:
+  push:
+    branches: master
+  pull_request:
+    paths: '*'
 jobs:
-- job: macOS
-  pool:
-    vmImage: macOS-10.13
-  steps:
-    - bash: |
-        set -e
-        sudo xcode-select --switch /Applications/Xcode_10.1.app/Contents/Developer
-        brew update-reset
-        export HOMEBREW_NO_AUTO_UPDATE=1
-        ln -s "$PWD" "/usr/local/Homebrew/Library/Taps/homebrew/homebrew-services"
+  tests:
+    runs-on: macOS-latest
+    steps:
+    - name: Set up Git repository
+      uses: actions/checkout@master
+
+    - name: Set up Homebrew
+      run: |
         export HOMEBREW_DEVELOPER="1"
-        brew style homebrew/services
+        export HOMEBREW_NO_AUTO_UPDATE=1
+        brew update-reset
         brew install mysql
+        ln -s "$PWD" "/usr/local/Homebrew/Library/Taps/homebrew/homebrew-services"
+
+    - name: Run brew style
+      run: brew style homebrew/services
+
+    - name: CI Tests
+      run: |
         # Test start command
         brew services start mysql
         brew services list | grep mysql
@@ -26,4 +38,3 @@ jobs:
         sleep 5
         mysql -uroot -e 'show databases'
         brew services stop mysql
-      displayName: Tests
