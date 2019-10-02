@@ -2,7 +2,7 @@
 
 Integrates Homebrew formulae with macOS' `launchctl` manager.
 
-[![Azure Pipelines](https://img.shields.io/vso/build/Homebrew/56a87eb4-3180-495a-9117-5ed6c79da737/4.svg)](https://dev.azure.com/Homebrew/Homebrew/_build/latest?definitionId=4)
+[![GitHub Actions](https://github.com/Homebrew/homebrew-services/workflows/GitHub%20Actions%20CI/badge.svg)](https://github.com/Homebrew/homebrew-services/actions)
 
 ## Requirements
 
