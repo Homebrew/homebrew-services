@@ -340,7 +340,7 @@ module ServicesCli
         next unless plist
 
         root_paths = []
-        if program_location = plist["ProgramArguments"].first
+        if program_location = plist["ProgramArguments"]&.first
           program_location_path = Pathname(program_location).realpath
           root_paths += [
             program_location_path,
