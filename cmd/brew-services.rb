@@ -295,7 +295,7 @@ module ServicesCli
       end
 
       if custom_plist
-        if custom_plist =~ %r{\Ahttps?://.+}
+        if %r{\Ahttps?://.+}.match?(custom_plist)
           custom_plist = { url: custom_plist }
         elsif File.exist?(custom_plist)
           custom_plist = Pathname.new(custom_plist)
@@ -549,7 +549,7 @@ class Service
     end.gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
 
     # Always remove the "UserName" as it doesn't work since 10.11.5
-    if data =~ %r{<key>UserName</key>}
+    if %r{<key>UserName</key>}.match?(data)
       data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, "")
     end
 
