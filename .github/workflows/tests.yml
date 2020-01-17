@@ -15,11 +15,20 @@ jobs:
         export HOMEBREW_DEVELOPER="1"
         export HOMEBREW_NO_AUTO_UPDATE=1
         brew update-reset
+        rm -f /usr/local/lib/libcrypto.1.1.dylib /usr/local/lib/libssl.1.1.dylib
         brew install mysql
         ln -s "$PWD" "/usr/local/Homebrew/Library/Taps/homebrew/homebrew-services"
 
     - name: Run brew style
       run: brew style homebrew/services
+
+    - name: Install Homebrew/homebrew-services RubyGems
+      run: |
+        gem install bundler -v "~>1"
+        bundle install --jobs 4 --retry 3
+
+    - name: Run Homebrew/homebrew-services RSpec tests
+      run: bundle exec rspec
 
     - name: CI Tests
       run: |
