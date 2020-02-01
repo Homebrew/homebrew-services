@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-describe Service do
+describe Homebrew::Service do
   subject(:service) { described_class.new(formula) }
 
   let(:formula) do

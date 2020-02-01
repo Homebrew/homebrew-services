@@ -43,4 +43,4 @@ require_relative "../lib/services_cli"
 
 # Start the CLI dispatch stuff.
 #
-ServicesCli.run!
+Homebrew::ServicesCli.run!

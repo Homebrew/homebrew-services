@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-describe ServicesCli do
+describe Homebrew::ServicesCli do
   subject(:services_cli) { described_class }
 
   describe "#run!" do
