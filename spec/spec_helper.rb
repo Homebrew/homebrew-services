@@ -16,6 +16,7 @@ SimpleCov.formatters = [SimpleCov::Formatter::HTMLFormatter]
 
 require "bundler"
 require "rspec/support/object_formatter"
+require "stub/exceptions"
 
 RSpec.configure do |config|
   config.filter_run_when_matching :focus

@@ -58,23 +58,25 @@ module Homebrew
     def run!
       # pbpaste's exit status is a proxy for detecting the use of reattach-to-user-namespace
       if ENV["TMUX"] && !quiet_system("/usr/bin/pbpaste")
-        odie "brew services cannot run under tmux!"
+        raise UsageError, "brew services cannot run under tmux!"
       end
 
       # Parse arguments.
-      act_on_all_services = ARGV.include?("--all")
-      cmd = ARGV.named[0]
-      formula = ARGV.named[1]
-      custom_plist = ARGV.named[2]
+      subcommand, formula, custom_plist, = Homebrew.args.named
 
-      target = if act_on_all_services
+      if ["list", "cleanup"].include?(subcommand)
+        raise UsageError, "The `#{subcommand}` subcommand does not accept a formula argument!" if formula
+        raise UsageError, "The `#{subcommand}` subcommand does not accept the --all argument!" if Homebrew.args.all?
+      end
+
+      target = if Homebrew.args.all?
         available_services
       elsif formula
         Service.new(Formulary.factory(formula))
       end
 
       # Dispatch commands and aliases.
-      case cmd
+      case subcommand
       when "cleanup", "clean", "cl", "rm" then cleanup
       when "list", "ls" then list
       when "restart", "relaunch", "reload", "r" then check(target) && restart(target)
@@ -82,8 +84,7 @@ module Homebrew
       when "start", "launch", "load", "s", "l" then check(target) && start(target, custom_plist)
       when "stop", "unload", "terminate", "term", "t", "u" then check(target) && stop(target)
       else
-        onoe "Unknown command `#{cmd}`!" unless cmd.nil?
-        abort `brew services --help`
+        raise UsageError, "Unknown subcommand `#{subcommand}`!" if subcommand
       end
     end
 
@@ -269,8 +270,8 @@ module Homebrew
           odie "Formula `#{target.name}` is not installed."
         elsif !target.plist.file? && target.formula.plist.nil?
           if target.formula.opt_prefix.exist? &&
-            (keg = Keg.for target.formula.opt_prefix) &&
-            keg.plist_installed?
+             (keg = Keg.for target.formula.opt_prefix) &&
+             keg.plist_installed?
             custom_plist = Pathname.new Dir["#{keg}/*.plist"].first
           else
             odie "Formula `#{target.name}` has not implemented #plist or installed a locatable .plist file"
