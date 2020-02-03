@@ -8,7 +8,7 @@ module Homebrew
   def services_args
     Homebrew::CLI::Parser.new do
       usage_banner <<~EOS
-        `services` <subcomand>
+        `services` <subcommand>
 
         Manage background services with macOS' `launchctl`(1) daemon manager.
 
