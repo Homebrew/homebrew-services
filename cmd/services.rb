@@ -15,7 +15,7 @@ module Homebrew
         If `sudo` is passed, operate on `/Library/LaunchDaemons` (started at boot).
         Otherwise, operate on `~/Library/LaunchAgents` (started at login).
 
-            [`sudo`] `brew services list`
+            [`sudo`] `brew services` [`list`]
               List all running services for the current user (or root).
 
             [`sudo`] `brew services run` (<formula>|`--all`)
