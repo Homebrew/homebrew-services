@@ -76,15 +76,15 @@ module Homebrew
       end
 
       # Dispatch commands and aliases.
-      case subcommand
+      case subcommand.presence
+      when nil, "list", "ls" then list
       when "cleanup", "clean", "cl", "rm" then cleanup
-      when "list", "ls" then list
       when "restart", "relaunch", "reload", "r" then check(target) && restart(target)
       when "run" then check(target) && run(target)
       when "start", "launch", "load", "s", "l" then check(target) && start(target, custom_plist)
       when "stop", "unload", "terminate", "term", "t", "u" then check(target) && stop(target)
       else
-        raise UsageError, "Unknown subcommand `#{subcommand}`!" if subcommand
+        raise UsageError, "Unknown subcommand `#{subcommand}`!"
       end
     end
 
