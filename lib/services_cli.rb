@@ -46,7 +46,9 @@ module Homebrew
     # Find all currently running services via launchctl list.
     def running
       # TODO: find replacement for deprecated "list"
-      `#{launchctl} list | grep homebrew.mxcl`.chomp.split("\n").map { |svc| Regexp.last_match(1) if svc =~ /(homebrew\.mxcl\..+)\z/ }.compact
+      `#{launchctl} list | grep homebrew.mxcl`.chomp.split("\n").map do |svc|
+        Regexp.last_match(1) if svc =~ /(homebrew\.mxcl\..+)\z/
+      end.compact
     end
 
     # All available services
@@ -57,9 +59,7 @@ module Homebrew
     # Run and start the command loop.
     def run!
       # pbpaste's exit status is a proxy for detecting the use of reattach-to-user-namespace
-      if ENV["TMUX"] && !quiet_system("/usr/bin/pbpaste")
-        raise UsageError, "brew services cannot run under tmux!"
-      end
+      raise UsageError, "brew services cannot run under tmux!" if ENV["TMUX"] && !quiet_system("/usr/bin/pbpaste")
 
       # Parse arguments.
       subcommand, formula, custom_plist, = Homebrew.args.named
@@ -173,7 +173,7 @@ module Homebrew
 
       # 1. Kill services that don't have a plist file.
       running.each do |label|
-        if svc = Service.from(label)
+        if (svc = Service.from(label))
           unless svc.dest.file?
             puts format("%-15.15<name>s #{Tty.bold}stale#{Tty.reset} => killing service...", name: svc.name)
             kill(svc)
@@ -221,9 +221,7 @@ module Homebrew
 
     def launchctl_load(plist, function, service)
       if MacOS.version >= :yosemite
-        unless function == "ran"
-          safe_system launchctl, "enable", "#{domain_target}/#{service.label}"
-        end
+        safe_system launchctl, "enable", "#{domain_target}/#{service.label}" if function != "ran"
         safe_system launchctl, "bootstrap", domain_target, plist
       else
         # This syntax was deprecated in Yosemite
@@ -304,14 +302,14 @@ module Homebrew
           next unless plist
 
           root_paths = []
-          if program_location = plist["ProgramArguments"]&.first
+          if (program_location = plist["ProgramArguments"]&.first)
             program_location_path = Pathname(program_location).realpath
             root_paths += [
               program_location_path,
               program_location_path.parent.realpath,
             ]
           end
-          if formula = service.formula
+          if (formula = service.formula)
             root_paths += [
               formula.opt_prefix,
               formula.linked_keg,
@@ -340,7 +338,10 @@ module Homebrew
       if target.is_a?(Service) && !target.loaded?
         rm target.dest if target.dest.exist? # get rid of installed plist anyway, dude
         if target.started?
-          odie "Service `#{target.name}` is started as `#{target.started_as}`. Try `#{"sudo " unless ServicesCli.root?}#{bin} stop #{target.name}`"
+          odie <<~EOS
+            Service `#{target.name}` is started as `#{target.started_as}`. Try:
+              #{"sudo " unless ServicesCli.root?}#{bin} stop #{target.name}"
+          EOS
         else
           odie "Service `#{target.name}` is not started."
         end
@@ -381,9 +382,7 @@ module Homebrew
         sleep(5)
         break if service.loaded?
 
-        if MacOS.version >= :yosemite
-          quiet_system launchctl, "kill", "SIGKILL", "#{domain_target}/#{service.label}"
-        end
+        quiet_system launchctl, "kill", "SIGKILL", "#{domain_target}/#{service.label}" if MacOS.version >= :yosemite
       end
       ohai "Successfully stopped `#{service.name}` via #{service.label}"
     end
