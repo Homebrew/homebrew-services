@@ -84,7 +84,7 @@ module Homebrew
       when "start", "launch", "load", "s", "l" then check(target) && start(target, custom_plist)
       when "stop", "unload", "terminate", "term", "t", "u" then check(target) && stop(target)
       else
-        raise UsageError, "Unknown subcommand `#{subcommand}`!"
+        raise UsageError, "unknown subcommand: #{subcommand}"
       end
     end
 
@@ -262,7 +262,7 @@ module Homebrew
           elsif File.exist?(custom_plist)
             custom_plist = Pathname.new(custom_plist)
           else
-            odie "#{custom_plist} is not a url or existing file"
+            odie "#{custom_plist} is not a URL or existing file"
           end
         elsif !target.installed?
           odie "Formula `#{target.name}` is not installed."
