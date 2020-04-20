@@ -15,7 +15,7 @@ describe Homebrew::ServicesCli do
     end
 
     it "prints help message on invalid command" do
-      expect { services_cli.run! }.to raise_error(UsageError, "Unknown subcommand `#{subcommand}`!")
+      expect { services_cli.run! }.to raise_error(UsageError, "unknown subcommand: #{subcommand}")
     end
   end
 end
