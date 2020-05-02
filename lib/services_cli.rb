@@ -301,13 +301,36 @@ module Homebrew
           end
           next unless plist
 
+          # From man launchd.plist and man execv:
+          # The first argument for execv/exevp is either the Property "Program"
+          # or the first entry of "ProgramArguments".
+          program_location = if plist["Program"].present?
+            plist["Program"]
+          elsif plist["ProgramArguments"]&.first.present?
+            plist["ProgramArguments"]&.first
+          end
+
           root_paths = []
-          if (program_location = plist["ProgramArguments"]&.first)
-            program_location_path = Pathname(program_location).realpath
-            root_paths += [
-              program_location_path,
-              program_location_path.parent.realpath,
-            ]
+          if program_location
+            # If "Program" is missing and first entry of "ProgramArguments" does
+            # not contain a slash a shell-like search is performed. We cannot
+            # determine file to change ownership in this case currently.
+            if program_location.include? "/"
+              program_location_path = Pathname(program_location).realpath
+              root_paths += [
+                program_location_path,
+                program_location_path.parent.realpath,
+              ]
+            else
+              opoo <<~EOS
+                Services description of #{service.formula} does contain
+                configuration not supported by `brew services`.
+                Could not determine file for entry:
+                  #{program_location}
+                If you encounter problems with #{service.formula} service this
+                might be due to ownership issues of this file.
+              EOS
+            end
           end
           if (formula = service.formula)
             root_paths += [
