@@ -303,11 +303,20 @@ module Homebrew
 
           root_paths = []
           if (program_location = plist["ProgramArguments"]&.first)
-            program_location_path = Pathname(program_location).realpath
-            root_paths += [
-              program_location_path,
-              program_location_path.parent.realpath,
-            ]
+            Dir.chdir("/") do
+              if File.exist?(program_location)
+                program_location_path = Pathname(program_location).realpath
+                root_paths += [
+                  program_location_path,
+                  program_location_path.parent.realpath,
+                ]
+              else
+                opoo <<~EOS
+                  #{service.name}: the first plist ProgramArguments entry does not exist:
+                    #{program_location}
+                EOS
+              end
+            end
           end
           if (formula = service.formula)
             root_paths += [
