@@ -302,12 +302,29 @@ module Homebrew
           next unless plist
 
           root_paths = []
-          if (program_location = plist["ProgramArguments"]&.first)
-            program_location_path = Pathname(program_location).realpath
-            root_paths += [
-              program_location_path,
-              program_location_path.parent.realpath,
-            ]
+
+          program_location = plist["ProgramArguments"]&.first
+          key = "first ProgramArguments value"
+          if program_location.blank?
+            program_location = plist["Program"]
+            key = "Program"
+          end
+
+          if program_location.present?
+            Dir.chdir("/") do
+              if File.exist?(program_location)
+                program_location_path = Pathname(program_location).realpath
+                root_paths += [
+                  program_location_path,
+                  program_location_path.parent.realpath,
+                ]
+              else
+                opoo <<~EOS
+                  #{service.name}: the #{key} does not exist:
+                    #{program_location}
+                EOS
+              end
+            end
           end
           if (formula = service.formula)
             root_paths += [

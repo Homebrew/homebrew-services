@@ -17,10 +17,13 @@ jobs:
         brew update-reset
         rm -f /usr/local/lib/libcrypto.1.1.dylib /usr/local/lib/libssl.1.1.dylib
         brew install mysql
-        ln -s "$PWD" "/usr/local/Homebrew/Library/Taps/homebrew/homebrew-services"
+        rm -rf /usr/local/Homebrew/Library/Taps/homebrew/homebrew-services
+        ln -s "$PWD" /usr/local/Homebrew/Library/Taps/homebrew/homebrew-services
 
     - name: Run brew style
-      run: brew style homebrew/services
+      run:
+        cd /usr/local/Homebrew
+        brew style homebrew/services
 
     - name: Install Homebrew/homebrew-services RubyGems
       run: |
