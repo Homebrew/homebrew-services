@@ -21,9 +21,7 @@ jobs:
         ln -s "$PWD" /usr/local/Homebrew/Library/Taps/homebrew/homebrew-services
 
     - name: Run brew style
-      run:
-        cd /usr/local/Homebrew
-        brew style homebrew/services
+      run: brew style homebrew/services
 
     - name: Install Homebrew/homebrew-services RubyGems
       run: |
