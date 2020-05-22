@@ -79,7 +79,7 @@ module Homebrew
       case subcommand.presence
       when nil, "list", "ls" then list
       when "cleanup", "clean", "cl", "rm" then cleanup
-      when "restart", "relaunch", "reload", "r" then check(target) && restart(target)
+      when "restart", "relaunch", "reload", "r" then check(target) && restart(target, custom_plist)
       when "run" then check(target) && run(target)
       when "start", "launch", "load", "s", "l" then check(target) && start(target, custom_plist)
       when "stop", "unload", "terminate", "term", "t", "u" then check(target) && stop(target)
@@ -197,7 +197,7 @@ module Homebrew
     end
 
     # Stop if loaded, then start or run again.
-    def restart(target)
+    def restart(target, custom_plist = nil)
       Array(target).each do |service|
         was_run = service.loaded? && !service.started?
 
@@ -206,7 +206,7 @@ module Homebrew
         if was_run
           run(service)
         else
-          start(service)
+          start(service, custom_plist)
         end
       end
     end
