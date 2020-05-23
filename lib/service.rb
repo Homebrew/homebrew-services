@@ -50,7 +50,7 @@ module Homebrew
 
     # Returns `true` if any version of the formula is installed.
     def installed?
-      formula.installed? || ((dir = formula.opt_prefix).directory? && !dir.children.empty?)
+      formula.any_version_installed?
     end
 
     # Returns `true` if the formula implements #plist or the plist file exists.
