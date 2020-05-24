@@ -220,6 +220,12 @@ module Homebrew
     end
 
     def launchctl_load(plist, function, service)
+      if root? && !service.plist_startup?
+        opoo "#{service.name} must be run as non-root to start at user login!"
+      elsif !root? && service.plist_startup?
+        opoo "#{service.name} must be run as root to start at system startup!"
+      end
+
       if MacOS.version >= :yosemite
         safe_system launchctl, "enable", "#{domain_target}/#{service.label}" if function != "ran"
         safe_system launchctl, "bootstrap", domain_target, plist
