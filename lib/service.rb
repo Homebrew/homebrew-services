@@ -38,6 +38,11 @@ module Homebrew
       @plist ||= formula.opt_prefix + "#{label}.plist"
     end
 
+    # Whether the plist should be launched at startup
+    def plist_startup?
+      formula.plist_startup.present?
+    end
+
     # Path to destination plist directory. If run as root, it's `boot_path`, else `user_path`.
     def dest_dir
       ServicesCli.root? ? ServicesCli.boot_path : ServicesCli.user_path
