@@ -14,7 +14,8 @@ This does not (and cannot) work with Homebrew on Linux (so don't file Linux issu
 
 ## Usage
 
-See `brew services --help` or [the `brew man` output](https://docs.brew.sh/Manpage).
+See [the `brew services` section of the `brew man` output](https://docs.brew.sh/Manpage#services-subcommand) or `brew services --help`.
+
 
 ## Tests
 
