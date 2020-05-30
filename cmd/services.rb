@@ -16,7 +16,7 @@ module Homebrew
         Otherwise, operate on `~/Library/LaunchAgents` (started at login).
 
         [`sudo`] `brew services` [`list`]:
-        List all running services for the current user (or root).
+        List all managed services for the current user (or root).
 
         [`sudo`] `brew services run` (<formula>|`--all`):
         Run the service <formula> without registering to launch at login (or boot).
