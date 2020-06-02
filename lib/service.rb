@@ -150,7 +150,7 @@ module Homebrew
     end
 
     def status_regexp
-      /\A([\d-]+)\s+([\d]+)\s+#{label}\z/
+      /\A([\d-]+)\s+(\d+)\s+#{label}\z/
     end
   end
 end
