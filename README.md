@@ -23,4 +23,4 @@ Tests can be run with `bundle install && bundle exec rspec`.
 
 ## Copyright
 
-Copyright (c) Homebrew maintainers. See [LICENSE.txt](https://github.com/Homebrew/homebrew-services/blob/master/LICENSE.txt) for details.
+Copyright (c) Homebrew maintainers. See [LICENSE.txt](https://github.com/Homebrew/homebrew-services/blob/HEAD/LICENSE.txt) for details.
