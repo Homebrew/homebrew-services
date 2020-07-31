@@ -112,7 +112,7 @@ module Homebrew
     end
 
     # Generate that plist file, dude.
-    def generate_plist(data = nil)
+    def generate_plist(data = nil, args:)
       data ||= plist.file? ? plist : formula.plist
 
       if data.respond_to?(:file?) && data.file?
@@ -134,7 +134,7 @@ module Homebrew
         data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, "")
       end
 
-      if Homebrew.args.verbose?
+      if args.verbose?
         ohai "Generated plist for #{formula.name}:"
         puts "   " + data.gsub("\n", "\n   ")
         puts

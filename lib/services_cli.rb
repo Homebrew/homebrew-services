@@ -57,19 +57,19 @@ module Homebrew
     end
 
     # Run and start the command loop.
-    def run!
+    def run!(args)
       # pbpaste's exit status is a proxy for detecting the use of reattach-to-user-namespace
       raise UsageError, "brew services cannot run under tmux!" if ENV["TMUX"] && !quiet_system("/usr/bin/pbpaste")
 
       # Parse arguments.
-      subcommand, formula, custom_plist, = Homebrew.args.named
+      subcommand, formula, custom_plist, = args.named
 
       if ["list", "cleanup"].include?(subcommand)
         raise UsageError, "The `#{subcommand}` subcommand does not accept a formula argument!" if formula
-        raise UsageError, "The `#{subcommand}` subcommand does not accept the --all argument!" if Homebrew.args.all?
+        raise UsageError, "The `#{subcommand}` subcommand does not accept the --all argument!" if args.all?
       end
 
-      target = if Homebrew.args.all?
+      target = if args.all?
         available_services
       elsif formula
         Service.new(Formulary.factory(formula))
@@ -79,9 +79,9 @@ module Homebrew
       case subcommand.presence
       when nil, "list", "ls" then list
       when "cleanup", "clean", "cl", "rm" then cleanup
-      when "restart", "relaunch", "reload", "r" then check(target) && restart(target, custom_plist)
+      when "restart", "relaunch", "reload", "r" then check(target) && restart(target, custom_plist, args: args)
       when "run" then check(target) && run(target)
-      when "start", "launch", "load", "s", "l" then check(target) && start(target, custom_plist)
+      when "start", "launch", "load", "s", "l" then check(target) && start(target, custom_plist, args: args)
       when "stop", "unload", "terminate", "term", "t", "u" then check(target) && stop(target)
       else
         raise UsageError, "unknown subcommand: #{subcommand}"
@@ -197,7 +197,7 @@ module Homebrew
     end
 
     # Stop if loaded, then start or run again.
-    def restart(target, custom_plist = nil)
+    def restart(target, custom_plist = nil, args:)
       Array(target).each do |service|
         was_run = service.loaded? && !service.started?
 
@@ -206,7 +206,7 @@ module Homebrew
         if was_run
           run(service)
         else
-          start(service, custom_plist)
+          start(service, custom_plist, args: args)
         end
       end
     end
@@ -255,7 +255,7 @@ module Homebrew
     end
 
     # Start a service.
-    def start(target, custom_plist = nil)
+    def start(target, custom_plist = nil, args:)
       if target.is_a?(Service)
         if target.loaded?
           puts "Service `#{target.name}` already started, use `#{bin} restart #{target.name}` to restart."
@@ -285,7 +285,7 @@ module Homebrew
 
       Array(target).reject(&:loaded?).each do |service|
         temp = Tempfile.new(service.label)
-        temp << service.generate_plist(custom_plist)
+        temp << service.generate_plist(custom_plist, args: args)
         temp.flush
 
         rm service.dest if service.dest.exist?

@@ -38,13 +38,13 @@ module Homebrew
   end
 
   def services
-    services_args.parse
+    args = services_args.parse
 
     raise UsageError, "`brew services` is supported only on macOS!" unless OS.mac?
 
     # Keep this after the .parse to keep --help fast.
     require_relative "../lib/services_cli"
 
-    Homebrew::ServicesCli.run!
+    Homebrew::ServicesCli.run!(args)
   end
 end
