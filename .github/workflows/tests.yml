@@ -10,23 +10,36 @@ jobs:
     - name: Set up Git repository
       uses: actions/checkout@master
 
-    - name: Set up Homebrew
-      run: |
-        export HOMEBREW_DEVELOPER="1"
-        export HOMEBREW_NO_AUTO_UPDATE=1
-        brew update-reset
-        rm -f /usr/local/lib/libcrypto.1.1.dylib /usr/local/lib/libssl.1.1.dylib
-        brew install mysql
-        rm -rf /usr/local/Homebrew/Library/Taps/homebrew/homebrew-services
-        ln -s "$PWD" /usr/local/Homebrew/Library/Taps/homebrew/homebrew-services
+    - name: Set up Ruby
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/setup-ruby@master
+      with:
+        ruby-version: '2.6'
 
-    - name: Run brew style
-      run: brew style homebrew/services
+    - name: Set up Homebrew
+      id: set-up-homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+
+    - name: Cache Homebrew Bundler RubyGems
+      id: cache
+      uses: actions/cache@master
+      with:
+        path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+        key: ${{ runner.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+        restore-keys: ${{ runner.os }}-rubygems-
+
+    - name: Install Homebrew Bundler RubyGems
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: brew install-bundler-gems
+
+    - name: Run brew test-bot --only-tap-syntax
+      run: brew test-bot --only-tap-syntax
+
+    - name: Install Bundler
+      run: gem install bundler -v "~>1"
 
     - name: Install Homebrew/homebrew-services RubyGems
-      run: |
-        gem install bundler -v "~>1"
-        bundle install --jobs 4 --retry 3
+      run: bundle install --jobs 4 --retry 3
 
     - name: Run Homebrew/homebrew-services RSpec tests
       run: bundle exec rspec
@@ -34,6 +47,7 @@ jobs:
     - name: Test start command
       run: |
         # Test start command
+        brew install mysql
         brew services start mysql
         brew services list | grep mysql
         sleep 5
