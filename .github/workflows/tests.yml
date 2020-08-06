@@ -7,15 +7,6 @@ jobs:
   tests:
     runs-on: macOS-latest
     steps:
-    - name: Set up Git repository
-      uses: actions/checkout@master
-
-    - name: Set up Ruby
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/setup-ruby@master
-      with:
-        ruby-version: '2.6'
-
     - name: Set up Homebrew
       id: set-up-homebrew
       uses: Homebrew/actions/setup-homebrew@master
