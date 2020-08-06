@@ -26,6 +26,12 @@ jobs:
     - name: Run brew test-bot --only-tap-syntax
       run: brew test-bot --only-tap-syntax
 
+    - name: Set up Ruby
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/setup-ruby@master
+      with:
+        ruby-version: '2.6'
+
     - name: Install Bundler
       run: gem install bundler -v "~>1"
 
