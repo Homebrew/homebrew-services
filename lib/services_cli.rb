@@ -53,6 +53,8 @@ module Homebrew
 
     # All available services
     def available_services
+      require "formula"
+
       Formula.installed.map { |formula| Service.new(formula) }.select(&:plist?).sort_by(&:name)
     end
 
