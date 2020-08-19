@@ -127,7 +127,7 @@ module Homebrew
       # Replace "template" variables and ensure label is always, always homebrew.mxcl.<formula>
       data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) do |_|
         formula.send(Regexp.last_match(1)).to_s if formula.respond_to?(Regexp.last_match(1))
-      end.gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, '\1' + label + '\2')
+      end.gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, "\\1#{label}\\2")
 
       # Always remove the "UserName" as it doesn't work since 10.11.5
       if %r{<key>UserName</key>}.match?(data)
@@ -136,7 +136,7 @@ module Homebrew
 
       if args.verbose?
         ohai "Generated plist for #{formula.name}:"
-        puts "   " + data.gsub("\n", "\n   ")
+        puts "   #{data.gsub("\n", "\n   ")}"
         puts
       end
 

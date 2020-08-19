@@ -35,7 +35,7 @@ module Homebrew
 
     # Run at login.
     def user_path
-      Pathname.new(ENV["HOME"] + "/Library/LaunchAgents")
+      Pathname.new("#{ENV["HOME"]}/Library/LaunchAgents")
     end
 
     # If root, return `boot_path`, else return `user_path`.
@@ -187,7 +187,7 @@ module Homebrew
       end
 
       # 2. Remove unused plist files.
-      Dir[path + "homebrew.mxcl.*.plist"].each do |file|
+      Dir["#{path}homebrew.mxcl.*.plist"].each do |file|
         next if running.include?(File.basename(file).sub(/\.plist$/i, ""))
 
         puts "Removing unused plist #{file}"
