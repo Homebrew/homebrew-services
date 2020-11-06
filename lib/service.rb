@@ -94,12 +94,18 @@ module Homebrew
       nil
     end
 
+    def pid?
+      pid.present? && !pid.zero?
+    end
+
     def error?
-      !exit_code || exit_code.nonzero?
+      return false if pid?
+
+      exit_code.blank? || exit_code.nonzero?
     end
 
     def unknown_status?
-      !status || status.empty? || !pid || pid.zero?
+      status.blank? && !pid?
     end
 
     # Get current PID of daemon process from launchctl.
