@@ -365,7 +365,7 @@ module Homebrew
         if target.started?
           odie <<~EOS
             Service `#{target.name}` is started as `#{target.started_as}`. Try:
-              #{"sudo " unless ServicesCli.root?}#{bin} stop #{target.name}"
+              #{"sudo " unless ServicesCli.root?}#{bin} stop #{target.name}
           EOS
         else
           odie "Service `#{target.name}` is not started."
