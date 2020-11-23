@@ -2,14 +2,24 @@
 # brew services completion
 #########################################################################
 
+# Called once on shell startup
+BREW_PREFIX="$(brew --prefix)"
+
 # Complete brew services xxxxxxx
 _brew_services() {
   local cur="${COMP_WORDS[COMP_CWORD]}"
   local prv="$(__brewcomp_prev)"
   case "$prv" in
-    start|stop|restart|cleanup)
+    stop|cleanup)
       # get list of agent plists, clean up with param expansion
-      local agents=( $HOME/Library/LaunchAgents/homebrew* )
+      # this only lists started services
+      local agents=( $HOME/Library/LaunchAgents/homebrew* /Library/LaunchDaemons/homebrew* )
+      agents=( "${agents[@]##*/homebrew.mxcl.}" )
+      agents=( "${agents[@]%.plist}" )
+      COMPREPLY=($(compgen -W "${agents[*]}" -- "$cur"))
+      ;;
+    start|restart|run)
+      local agents=( $(find "${BREW_PREFIX}/Cellar" -mindepth 3 -maxdepth 3 -name 'homebrew.mxcl.*.plist') )
       agents=( "${agents[@]##*/homebrew.mxcl.}" )
       agents=( "${agents[@]%.plist}" )
       COMPREPLY=($(compgen -W "${agents[*]}" -- "$cur"))
