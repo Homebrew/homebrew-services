@@ -19,7 +19,7 @@ _brew_services() {
       COMPREPLY=($(compgen -W "${agents[*]}" -- "$cur"))
       ;;
     start|restart|run)
-      local agents=( $(find "${BREW_PREFIX}/Cellar" -mindepth 3 -maxdepth 3 -name 'homebrew.mxcl.*.plist') )
+      local agents=( $(find "${HOMEBREW_PREFIX}/Cellar" -mindepth 3 -maxdepth 3 -name 'homebrew.mxcl.*.plist') )
       agents=( "${agents[@]##*/homebrew.mxcl.}" )
       agents=( "${agents[@]%.plist}" )
       COMPREPLY=($(compgen -W "${agents[*]}" -- "$cur"))
