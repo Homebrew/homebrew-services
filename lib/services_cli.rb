@@ -377,13 +377,13 @@ module Homebrew
         # This command doesn't exist in Yosemite.
         if MacOS.version >= :el_capitan
           quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
-          while $CHILD_STATUS.to_i == 9216
-            sleep(5)
+          while $CHILD_STATUS.to_i == 9216 || service.loaded?
+            sleep(1)
             quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
           end
         end
         if service.dest.exist?
-          unless MacOS.version >= :el_capitan
+          if MacOS.version < :el_capitan
             # This syntax was deprecated in Yosemite but there's no alternative
             # command (bootout) until El Capitan.
             safe_system launchctl, "unload", "-w", service.dest.to_s
