@@ -23,7 +23,7 @@ module Homebrew
       Process.uid.zero?
     end
 
-    # Current user.
+    # Current user running `[sudo] brew services`.
     def user
       @user ||= `/usr/bin/whoami`.chomp
     end
@@ -36,6 +36,10 @@ module Homebrew
     # Run at login.
     def user_path
       Pathname.new("#{ENV["HOME"]}/Library/LaunchAgents")
+    end
+
+    def user_from_standard_plist_path
+      ServicesCli.user_path.to_path.match(%r{Users/(\w+)})[1]
     end
 
     # If root, return `boot_path`, else return `user_path`.
@@ -112,7 +116,7 @@ module Homebrew
           formula[:plist] = ServicesCli.boot_path + "#{service.label}.plist"
         elsif service.started?(as: :user)
           formula[:status] = :started
-          formula[:user] = ServicesCli.user
+          formula[:user] = ServicesCli.user_from_standard_plist_path
           formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
         elsif service.loaded?
           formula[:status] = :started
