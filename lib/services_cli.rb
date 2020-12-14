@@ -28,6 +28,14 @@ module Homebrew
       @user ||= `/usr/bin/whoami`.chomp
     end
 
+    def user_of_process(pid)
+      if pid.nil? || pid.zero?
+        ENV["HOME"].split("/").last
+      else
+        `ps -o user -p #{pid} | grep -v USER`.chomp
+      end
+    end
+
     # Run at boot.
     def boot_path
       Pathname.new("/Library/LaunchDaemons")
@@ -112,7 +120,7 @@ module Homebrew
           formula[:plist] = ServicesCli.boot_path + "#{service.label}.plist"
         elsif service.started?(as: :user)
           formula[:status] = :started
-          formula[:user] = ENV["HOME"].split("/").last
+          formula[:user] = ServicesCli.user_of_process(service.pid)
           formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
         elsif service.loaded?
           formula[:status] = :started
