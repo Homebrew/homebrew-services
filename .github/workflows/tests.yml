@@ -42,22 +42,21 @@ jobs:
 
     - name: Test start command
       run: |
-        # Test start command
-        brew install mysql
-        brew services start mysql
-        brew services list | grep mysql
+        brew install redis
+        brew services start redis
+        brew services list | grep redis
         sleep 5
-        mysql -uroot -e 'show databases'
+        redis-cli INFO | grep uptime_in_seconds
 
     - name: Test stop command
       run: |
-        brew services stop mysql
+        brew services stop redis
         sleep 5
-        if launchctl list | grep mysql; then false; else true; fi
+        if launchctl list | grep redis; then false; else true; fi
 
     - name: Test run command
       run: |
-        brew services run mysql
+        brew services run redis
         sleep 5
-        mysql -uroot -e 'show databases'
-        brew services stop mysql
+        redis-cli INFO | grep uptime_in_seconds
+        brew services stop redis
