@@ -23,9 +23,17 @@ module Homebrew
       Process.uid.zero?
     end
 
-    # Current user.
+    # Current user running `[sudo] brew services`.
     def user
       @user ||= `/usr/bin/whoami`.chomp
+    end
+
+    def user_of_process(pid)
+      if pid.nil? || pid.zero?
+        ENV["HOME"].split("/").last
+      else
+        `ps -o user -p #{pid} | grep -v USER`.chomp
+      end
     end
 
     # Run at boot.
@@ -112,7 +120,7 @@ module Homebrew
           formula[:plist] = ServicesCli.boot_path + "#{service.label}.plist"
         elsif service.started?(as: :user)
           formula[:status] = :started
-          formula[:user] = ServicesCli.user
+          formula[:user] = ServicesCli.user_of_process(service.pid)
           formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
         elsif service.loaded?
           formula[:status] = :started
