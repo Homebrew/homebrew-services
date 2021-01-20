@@ -159,13 +159,7 @@ module Homebrew
         when :started then "#{Tty.green}started#{Tty.reset}"
         when :stopped then "stopped"
         when :error   then "#{Tty.red}error  #{Tty.reset}"
-        when :unknown
-          if ENV["HOMEBREW_DEVELOPER"]
-            "#{Tty.yellow}unknown#{Tty.reset}"
-          else
-            # For backwards-compatability showing unknown state as started in yellow colour
-            "#{Tty.yellow}started#{Tty.reset}"
-          end
+        when :unknown then "#{Tty.yellow}unknown#{Tty.reset}"
         end
 
         puts format("%-#{longest_name}.#{longest_name}<name>s %<status>s " \
