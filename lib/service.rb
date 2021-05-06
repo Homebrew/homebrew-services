@@ -9,7 +9,7 @@ module Homebrew
 
     # Create a new `Service` instance from either a path or label.
     def self.from(path_or_label)
-      return unless path_or_label =~ /homebrew\.mxcl\.([\w+-.@]+)(\.plist)?\z/
+      return unless path_or_label =~ /homebrew(?>\.mxcl)?\.([\w+-.@]+)(\.plist|\.service)?\z/
 
       begin
         new(Formulary.factory(Regexp.last_match(1)))
@@ -35,7 +35,7 @@ module Homebrew
 
     # Path to a static plist file. This is always `homebrew.mxcl.<formula>.plist`.
     def plist
-      @plist ||= formula.opt_prefix + "#{label}.plist"
+      @plist ||= formula.plist_path
     end
 
     # Whether the plist should be launched at startup
@@ -50,7 +50,7 @@ module Homebrew
 
     # Path to destination plist. If run as root, it's in `boot_path`, else `user_path`.
     def dest
-      dest_dir + "#{label}.plist"
+      dest_dir + plist.basename
     end
 
     # Returns `true` if any version of the formula is installed.
@@ -79,9 +79,9 @@ module Homebrew
     # Accepts Hash option `:as` with values `:root` for LaunchDaemon path or `:user` for LaunchAgent path.
     def started?(opts = { as: false })
       if opts[:as] && opts[:as] == :root
-        (ServicesCli.boot_path + "#{label}.plist").exist?
+        (ServicesCli.boot_path + plist.basename).exist?
       elsif opts[:as] && opts[:as] == :user
-        (ServicesCli.user_path + "#{label}.plist").exist?
+        (ServicesCli.user_path + plist.basename).exist?
       else
         started?(as: :root) || started?(as: :user)
       end

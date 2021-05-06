@@ -32,3 +32,17 @@ RSpec.configure do |config|
     Bundler.with_clean_env { example.run }
   end
 end
+
+module Homebrew
+  module ServicesCli
+    module_function
+
+    def which(cmd)
+      `which #{cmd}`.chomp
+    end
+
+    def quiet_system(_cmd)
+      true
+    end
+  end
+end
