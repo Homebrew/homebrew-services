@@ -25,7 +25,7 @@ module Homebrew
 
     # Current user running `[sudo] brew services`.
     def user
-      @user ||= `/usr/bin/whoami`.chomp
+      @user ||= Utils.safe_popen_read("/usr/bin/whoami").chomp
     end
 
     def user_of_process(pid)
@@ -117,11 +117,11 @@ module Homebrew
         if service.started?(as: :root)
           formula[:status] = :started
           formula[:user] = "root"
-          formula[:plist] = ServicesCli.boot_path + "#{service.label}.plist"
+          formula[:plist] = ServicesCli.boot_path + service.plist.basename
         elsif service.started?(as: :user)
           formula[:status] = :started
           formula[:user] = ServicesCli.user_of_process(service.pid)
-          formula[:plist] = ServicesCli.user_path + "#{service.label}.plist"
+          formula[:plist] = ServicesCli.user_path + service.plist.basename
         elsif service.loaded?
           formula[:status] = :started
           formula[:user] = ServicesCli.user
@@ -189,8 +189,8 @@ module Homebrew
       end
 
       # 2. Remove unused plist files.
-      Dir["#{path}homebrew.mxcl.*.plist"].each do |file|
-        next if running.include?(File.basename(file).sub(/\.plist$/i, ""))
+      Dir["#{path}homebrew.*.{plist,service}"].each do |file|
+        next if running.include?(File.basename(file).sub(/\.(plist|service)$/i, ""))
 
         puts "Removing unused plist #{file}"
         rm file
@@ -280,7 +280,7 @@ module Homebrew
           if target.formula.opt_prefix.exist? &&
              (keg = Keg.for target.formula.opt_prefix) &&
              keg.plist_installed?
-            custom_plist = Pathname.new Dir["#{keg}/*.plist"].first
+            custom_plist = Pathname.new Dir["#{keg}/*.{plist,service}"].first
           else
             odie "Formula `#{target.name}` has not implemented #plist or installed a locatable .plist file"
           end
