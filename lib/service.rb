@@ -9,7 +9,7 @@ module Homebrew
 
     # Create a new `Service` instance from either a path or label.
     def self.from(path_or_label)
-      return unless path_or_label =~ /homebrew(?>\.mxcl)?\.([\w+-.@]+)(\.plist|\.service)?\z/
+      return unless path_or_label =~ path_or_label_regex
 
       begin
         new(Formulary.factory(Regexp.last_match(1)))
@@ -72,7 +72,7 @@ module Homebrew
     # Returns `true` if the service is loaded, else false.
     def loaded?
       # TODO: find replacement for deprecated "list"
-      `#{ServicesCli.launchctl} list | grep '#{label}$' 2>/dev/null`.chomp =~ /#{label}\z/
+      quiet_system ServicesCli.launchctl, "list", label
     end
 
     # Returns `true` if service is started (.plist is present in LaunchDaemon or LaunchAgent path), else `false`
@@ -110,11 +110,11 @@ module Homebrew
 
     # Get current PID of daemon process from launchctl.
     def pid
-      return Regexp.last_match(1).to_i if status =~ status_regexp
+      return Regexp.last_match(1).to_i if status =~ pid_regex
     end
 
     def exit_code
-      return Regexp.last_match(2).to_i if status =~ status_regexp
+      return Regexp.last_match(1).to_i if status =~ exit_code_regex
     end
 
     # Generate that plist file, dude.
@@ -152,11 +152,19 @@ module Homebrew
     private
 
     def status
-      @status ||= `#{ServicesCli.launchctl} list | grep #{label} 2>/dev/null`.chomp
+      @status ||= Utils.safe_popen_read("#{ServicesCli.launchctl} list '#{label}'").chomp
     end
 
-    def status_regexp
-      /\A([\d-]+)\s+(\d+)\s+#{label}\z/
+    def exit_code_regex
+      /"LastExitStatus"\ =\ ([0-9]*);/
+    end
+
+    def pid_regex
+      /"PID"\ =\ ([0-9]*);/
+    end
+
+    private_class_method def self.path_or_label_regex
+      /homebrew(?>\.mxcl)?\.([\w+-.@]+)(\.plist|\.service)?\z/
     end
   end
 end

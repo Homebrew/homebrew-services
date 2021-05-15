@@ -32,7 +32,7 @@ module Homebrew
       if pid.nil? || pid.zero?
         ENV["HOME"].split("/").last
       else
-        `ps -o user -p #{pid} | grep -v USER`.chomp
+        Utils.safe_popen_read("ps", "-o", "user", "-p", pid.to_s).lines.second.chomp
       end
     end
 
@@ -54,7 +54,7 @@ module Homebrew
     # Find all currently running services via launchctl list.
     def running
       # TODO: find replacement for deprecated "list"
-      `#{launchctl} list | grep homebrew.mxcl`.chomp.split("\n").map do |svc|
+      Utils.safe_popen_read("#{launchctl} list | grep homebrew").chomp.split("\n").map do |svc|
         Regexp.last_match(1) if svc =~ /(homebrew\.mxcl\..+)\z/
       end.compact
     end

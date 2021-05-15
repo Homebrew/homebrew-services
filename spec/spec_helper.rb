@@ -34,6 +34,14 @@ RSpec.configure do |config|
 end
 
 module Homebrew
+  module Utils
+    module_function
+
+    def safe_popen_read(_cmd)
+      ""
+    end
+  end
+
   module ServicesCli
     module_function
 
@@ -43,6 +51,12 @@ module Homebrew
 
     def quiet_system(_cmd)
       true
+    end
+  end
+
+  class Service
+    def quiet_system(*_args)
+      false
     end
   end
 end
