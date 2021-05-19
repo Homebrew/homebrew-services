@@ -48,7 +48,7 @@ describe Homebrew::Service do
 
   describe "#loaded?" do
     it "outputs if the plist is loaded" do
-      expect(service.loaded?).to eq(nil)
+      expect(service.loaded?).to eq(false)
     end
   end
 
