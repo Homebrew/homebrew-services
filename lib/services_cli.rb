@@ -54,7 +54,7 @@ module Homebrew
     # Find all currently running services via launchctl list.
     def running
       # TODO: find replacement for deprecated "list"
-      Utils.safe_popen_read("#{launchctl} list | grep homebrew").chomp.split("\n").map do |svc|
+      Utils.popen_read("#{launchctl} list | grep homebrew").chomp.split("\n").map do |svc|
         Regexp.last_match(1) if svc =~ /(homebrew\.mxcl\..+)\z/
       end.compact
     end

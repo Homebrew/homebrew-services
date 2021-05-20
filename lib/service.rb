@@ -152,7 +152,7 @@ module Homebrew
     private
 
     def status
-      @status ||= Utils.safe_popen_read("#{ServicesCli.launchctl} list '#{label}'").chomp
+      @status ||= Utils.popen_read("#{ServicesCli.launchctl} list '#{label}'").chomp
     end
 
     def exit_code_regex

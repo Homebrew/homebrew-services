@@ -37,6 +37,10 @@ module Homebrew
   module Utils
     module_function
 
+    def popen_read(_cmd)
+      ""
+    end
+
     def safe_popen_read(_cmd)
       ""
     end
