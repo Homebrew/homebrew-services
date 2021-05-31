@@ -75,21 +75,21 @@ module Homebrew
       quiet_system ServicesCli.launchctl, "list", label
     end
 
-    # Returns `true` if service is started (.plist is present in LaunchDaemon or LaunchAgent path), else `false`
-    # Accepts Hash option `:as` with values `:root` for LaunchDaemon path or `:user` for LaunchAgent path.
-    def started?(opts = { as: false })
-      if opts[:as] && opts[:as] == :root
-        (ServicesCli.boot_path + plist.basename).exist?
-      elsif opts[:as] && opts[:as] == :user
-        (ServicesCli.user_path + plist.basename).exist?
+    # Returns `true` if service is present (.plist is present in LaunchDaemon or LaunchAgent path), else `false`
+    # Accepts Hash option `:for` with values `:root` for LaunchDaemon path or `:user` for LaunchAgent path.
+    def plist_present?(opts = { for: false })
+      if opts[:for] && opts[:for] == :root
+        root_path_plist_present?
+      elsif opts[:for] && opts[:for] == :user
+        user_path_plist_present?
       else
-        started?(as: :root) || started?(as: :user)
+        boot_path_plist_present? || user_path_plist_present?
       end
     end
 
-    def started_as
-      return "root" if started?(as: :root)
-      return ENV["HOME"].sub("/Users/", "") if started?(as: :user)
+    def owner
+      return "root" if root_path_plist_present?
+      return ENV["USER"] if user_path_plist_present?
 
       nil
     end
@@ -161,6 +161,14 @@ module Homebrew
 
     def pid_regex
       /"PID"\ =\ ([0-9]*);/
+    end
+
+    def root_path_plist_present?
+      (ServicesCli.boot_path + plist.basename).exist?
+    end
+
+    def user_path_plist_present?
+      (ServicesCli.user_path + plist.basename).exist?
     end
 
     private_class_method def self.path_or_label_regex

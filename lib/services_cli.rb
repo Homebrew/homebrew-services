@@ -114,11 +114,11 @@ module Homebrew
           plist:  nil,
         }
 
-        if service.started?(as: :root)
+        if service.plist_present?(for: :root)
           formula[:status] = :started
           formula[:user] = "root"
           formula[:plist] = ServicesCli.boot_path + service.plist.basename
-        elsif service.started?(as: :user)
+        elsif service.plist_present?(for: :user)
           formula[:status] = :started
           formula[:user] = ServicesCli.user_of_process(service.pid)
           formula[:plist] = ServicesCli.user_path + service.plist.basename
@@ -203,7 +203,7 @@ module Homebrew
     # Stop if loaded, then start or run again.
     def restart(target, custom_plist = nil, args:)
       Array(target).each do |service|
-        was_run = service.loaded? && !service.started?
+        was_run = service.loaded? && !service.plist_present?
 
         stop(service) if service.loaded?
 
@@ -364,9 +364,9 @@ module Homebrew
     def stop(target)
       if target.is_a?(Service) && !target.loaded?
         rm target.dest if target.dest.exist? # get rid of installed plist anyway, dude
-        if target.started?
+        if target.plist_present?
           odie <<~EOS
-            Service `#{target.name}` is started as `#{target.started_as}`. Try:
+            Service `#{target.name}` is started as `#{target.owner}`. Try:
               #{"sudo " unless ServicesCli.root?}#{bin} stop #{target.name}
           EOS
         else
