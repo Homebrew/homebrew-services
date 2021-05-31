@@ -230,13 +230,8 @@ module Homebrew
         opoo "#{service.name} must be run as root to start at system startup!"
       end
 
-      if MacOS.version >= :yosemite
-        safe_system launchctl, "enable", "#{domain_target}/#{service.label}" if function != "ran"
-        safe_system launchctl, "bootstrap", domain_target, plist
-      else
-        # This syntax was deprecated in Yosemite
-        safe_system launchctl, "load", "-w", plist
-      end
+      safe_system launchctl, "enable", "#{domain_target}/#{service.label}" if function != "ran"
+      safe_system launchctl, "bootstrap", domain_target, plist
 
       ohai("Successfully #{function} `#{service.name}` (label: #{service.label})")
     end
@@ -376,20 +371,12 @@ module Homebrew
 
       Array(target).select(&:loaded?).each do |service|
         puts "Stopping `#{service.name}`... (might take a while)"
-        # This command doesn't exist in Yosemite.
-        if MacOS.version >= :el_capitan
+        quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
+        while $CHILD_STATUS.to_i == 9216 || service.loaded?
+          sleep(1)
           quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
-          while $CHILD_STATUS.to_i == 9216 || service.loaded?
-            sleep(1)
-            quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
-          end
         end
         if service.dest.exist?
-          if MacOS.version < :el_capitan
-            # This syntax was deprecated in Yosemite but there's no alternative
-            # command (bootout) until El Capitan.
-            safe_system launchctl, "unload", "-w", service.dest.to_s
-          end
           ohai "Successfully stopped `#{service.name}` (label: #{service.label})"
         elsif service.loaded?
           kill(service)
@@ -400,16 +387,12 @@ module Homebrew
 
     # Kill a service that has no plist file.
     def kill(service)
-      if MacOS.version >= :yosemite
-        quiet_system launchctl, "kill", "SIGTERM", "#{domain_target}/#{service.label}"
-      else
-        safe_system launchctl, "remove", service.label
-      end
+      quiet_system launchctl, "kill", "SIGTERM", "#{domain_target}/#{service.label}"
       while service.loaded?
         sleep(5)
         break if service.loaded?
 
-        quiet_system launchctl, "kill", "SIGKILL", "#{domain_target}/#{service.label}" if MacOS.version >= :yosemite
+        quiet_system launchctl, "kill", "SIGKILL", "#{domain_target}/#{service.label}"
       end
       ohai "Successfully stopped `#{service.name}` via #{service.label}"
     end
