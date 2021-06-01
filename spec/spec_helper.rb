@@ -62,5 +62,10 @@ module Homebrew
     def quiet_system(*_args)
       false
     end
+
+    def odie(string)
+      puts string
+      exit
+    end
   end
 end
