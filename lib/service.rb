@@ -79,7 +79,7 @@ module Homebrew
     # Accepts Hash option `:for` with values `:root` for LaunchDaemon path or `:user` for LaunchAgent path.
     def plist_present?(opts = { for: false })
       if opts[:for] && opts[:for] == :root
-        root_path_plist_present?
+        boot_path_plist_present?
       elsif opts[:for] && opts[:for] == :user
         user_path_plist_present?
       else
@@ -88,7 +88,7 @@ module Homebrew
     end
 
     def owner
-      return "root" if root_path_plist_present?
+      return "root" if boot_path_plist_present?
       return ENV["USER"] if user_path_plist_present?
 
       nil
@@ -163,7 +163,7 @@ module Homebrew
       /"PID"\ =\ ([0-9]*);/
     end
 
-    def root_path_plist_present?
+    def boot_path_plist_present?
       (ServicesCli.boot_path + plist.basename).exist?
     end
 

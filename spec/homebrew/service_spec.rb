@@ -46,15 +46,71 @@ describe Homebrew::Service do
     end
   end
 
+  describe "#installed?" do
+    it "outputs if the plist formula is installed" do
+      expect(service.installed?).to eq(nil)
+    end
+  end
+
+  describe "#plist?" do
+    it "outputs if the plist is available" do
+      expect(service.plist?).to eq(false)
+    end
+  end
+
   describe "#loaded?" do
     it "outputs if the plist is loaded" do
       expect(service.loaded?).to eq(false)
     end
   end
 
+  describe "#plist_present?" do
+    it "outputs if the plist is present" do
+      expect(service.plist_present?).to eq(false)
+    end
+
+    it "outputs if the plist is present for root" do
+      expect(service.plist_present?(for: :root)).to eq(false)
+    end
+
+    it "outputs if the plist is present for user" do
+      expect(service.plist_present?(for: :user)).to eq(false)
+    end
+  end
+
+  describe "#owner?" do
+    it "outputs the plist owner" do
+      expect(service.owner).to eq(nil)
+    end
+  end
+
   describe "#pid?" do
     it "outputs false because there is not pid" do
       expect(service.pid?).to eq(false)
+    end
+  end
+
+  describe "#pid" do
+    it "outputs nil because there is not pid" do
+      expect(service.pid).to eq(nil)
+    end
+  end
+
+  describe "#error?" do
+    it "outputs true because there is no PID" do
+      expect(service.error?).to eq(true)
+    end
+  end
+
+  describe "#exit_code" do
+    it "outputs nil because there is no exit code" do
+      expect(service.exit_code).to eq(nil)
+    end
+  end
+
+  describe "#unknown_status?" do
+    it "outputs true because there is no PID" do
+      expect(service.unknown_status?).to eq(true)
     end
   end
 
@@ -71,6 +127,14 @@ describe Homebrew::Service do
       service = described_class.new(formula)
 
       expect(service.plist_startup?).to eq(true)
+    end
+  end
+
+  describe "#generate_plist?" do
+    it "outputs error for plist" do
+      expect do
+        service.generate_plist(nil, args: [])
+      end.to output("Could not read the plist for `mysql`!").to_stdout
     end
   end
 end
