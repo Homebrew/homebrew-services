@@ -66,35 +66,11 @@ module Homebrew
       Formula.installed.map { |formula| Service.new(formula) }.select(&:plist?).sort_by(&:name)
     end
 
-    # Run and start the command loop.
-    def run!(args)
-      # pbpaste's exit status is a proxy for detecting the use of reattach-to-user-namespace
-      raise UsageError, "brew services cannot run under tmux!" if ENV["TMUX"] && !quiet_system("/usr/bin/pbpaste")
-
-      # Parse arguments.
-      subcommand, formula, custom_plist, = args.named
-
-      if ["list", "cleanup"].include?(subcommand)
-        raise UsageError, "The `#{subcommand}` subcommand does not accept a formula argument!" if formula
-        raise UsageError, "The `#{subcommand}` subcommand does not accept the --all argument!" if args.all?
-      end
-
-      target = if args.all?
-        available_services
-      elsif formula
-        Service.new(Formulary.factory(formula))
-      end
-
-      # Dispatch commands and aliases.
-      case subcommand.presence
-      when nil, "list", "ls" then list
-      when "cleanup", "clean", "cl", "rm" then cleanup
-      when "restart", "relaunch", "reload", "r" then check(target) && restart(target, custom_plist, args: args)
-      when "run" then check(target) && run(target)
-      when "start", "launch", "load", "s", "l" then check(target) && start(target, custom_plist, args: args)
-      when "stop", "unload", "terminate", "term", "t", "u" then check(target) && stop(target)
+    def domain_target
+      if root?
+        "system"
       else
-        raise UsageError, "unknown subcommand: #{subcommand}"
+        "gui/#{Process.uid}"
       end
     end
 
@@ -201,7 +177,7 @@ module Homebrew
     end
 
     # Stop if loaded, then start or run again.
-    def restart(target, custom_plist = nil, args:)
+    def restart(target, plist_file = nil, verbose: false)
       Array(target).each do |service|
         was_run = service.loaded? && !service.plist_present?
 
@@ -210,33 +186,12 @@ module Homebrew
         if was_run
           run(service)
         else
-          start(service, custom_plist, args: args)
+          start(service, plist_file, verbose)
         end
       end
     end
 
-    def domain_target
-      if root?
-        "system"
-      else
-        "gui/#{Process.uid}"
-      end
-    end
-
-    def launchctl_load(plist, function, service)
-      if root? && !service.plist_startup?
-        opoo "#{service.name} must be run as non-root to start at user login!"
-      elsif !root? && service.plist_startup?
-        opoo "#{service.name} must be run as root to start at system startup!"
-      end
-
-      safe_system launchctl, "enable", "#{domain_target}/#{service.label}" if function != "ran"
-      safe_system launchctl, "bootstrap", domain_target, plist
-
-      ohai("Successfully #{function} `#{service.name}` (label: #{service.label})")
-    end
-
-    # Run a service.
+    # Run a service as defined in the formula. This does not clean the plist like `start` does.
     def run(target)
       if target.is_a?(Service)
         if target.loaded?
@@ -249,33 +204,29 @@ module Homebrew
       end
 
       Array(target).each do |service|
-        launchctl_load(service.plist, "ran", service)
+        launchctl_load(service, enable: false)
       end
     end
 
     # Start a service.
-    def start(target, custom_plist = nil, args:)
+    def start(target, plist_file = nil, verbose: false)
+      if plist_file.present?
+        @plist = Pathname.new plist_file
+        raise UsageError, "Provided plist does not exist" unless @plist.exist?
+      end
       if target.is_a?(Service)
         if target.loaded?
           puts "Service `#{target.name}` already started, use `#{bin} restart #{target.name}` to restart."
           return
         end
 
-        if custom_plist
-          if %r{\Ahttps?://.+}.match?(custom_plist)
-            custom_plist = { url: custom_plist }
-          elsif File.exist?(custom_plist)
-            custom_plist = Pathname.new(custom_plist)
-          else
-            odie "#{custom_plist} is not a URL or existing file"
-          end
-        elsif !target.installed?
+        if !target.installed?
           odie "Formula `#{target.name}` is not installed."
         elsif !target.plist.file? && target.formula.plist.nil?
           if target.formula.opt_prefix.exist? &&
              (keg = Keg.for target.formula.opt_prefix) &&
              keg.plist_installed?
-            custom_plist = Pathname.new Dir["#{keg}/*.{plist,service}"].first
+            @plist ||= Pathname.new Dir["#{keg}/*.{plist,service}"].first
           else
             odie "Formula `#{target.name}` has not implemented #plist or installed a locatable .plist file"
           end
@@ -283,75 +234,17 @@ module Homebrew
       end
 
       Array(target).reject(&:loaded?).each do |service|
-        temp = Tempfile.new(service.label)
-        temp << service.generate_plist(custom_plist, args: args)
-        temp.flush
+        install_service_file(service) if @plist.blank?
 
-        rm service.dest if service.dest.exist?
-        service.dest_dir.mkpath unless service.dest_dir.directory?
-        cp temp.path, service.dest
-
-        # Clear tempfile.
-        temp.close
-
-        chmod 0644, service.dest
-
-        if root?
-          chown "root", "admin", service.dest
-          plist_data = service.dest.read
-          plist = begin
-            Plist.parse_xml(plist_data)
-          rescue
-            nil
-          end
-          next unless plist
-
-          root_paths = []
-
-          program_location = plist["ProgramArguments"]&.first
-          key = "first ProgramArguments value"
-          if program_location.blank?
-            program_location = plist["Program"]
-            key = "Program"
-          end
-
-          if program_location.present?
-            Dir.chdir("/") do
-              if File.exist?(program_location)
-                program_location_path = Pathname(program_location).realpath
-                root_paths += [
-                  program_location_path,
-                  program_location_path.parent.realpath,
-                ]
-              else
-                opoo <<~EOS
-                  #{service.name}: the #{key} does not exist:
-                    #{program_location}
-                EOS
-              end
-            end
-          end
-          if (formula = service.formula)
-            root_paths += [
-              formula.opt_prefix,
-              formula.linked_keg,
-              formula.bin,
-              formula.sbin,
-            ]
-          end
-          root_paths = root_paths.sort.uniq.select(&:exist?)
-
-          opoo <<~EOS
-            Taking root:admin ownership of some #{service.formula} paths:
-              #{root_paths.join("\n  ")}
-            This will require manual removal of these paths using `sudo rm` on
-            brew upgrade/reinstall/uninstall.
-          EOS
-          chown "root", "admin", root_paths
-          chmod "+t", root_paths
+        if @plist.blank? && verbose
+          ohai "Generated plist for #{service.formula.name}:"
+          puts "   #{service.dest.read.gsub("\n", "\n   ")}"
+          puts
         end
 
-        launchctl_load(service.dest.to_s, "started", service)
+        next if take_root_ownership(service).nil? && root?
+
+        launchctl_load(service, enable: true)
       end
     end
 
@@ -395,6 +288,95 @@ module Homebrew
         quiet_system launchctl, "kill", "SIGKILL", "#{domain_target}/#{service.label}"
       end
       ohai "Successfully stopped `#{service.name}` via #{service.label}"
+    end
+
+    def install_service_file(service)
+      temp = Tempfile.new(service.label)
+      temp << service.generate_plist(@plist)
+      temp.flush
+
+      rm service.dest if service.dest.exist?
+      service.dest_dir.mkpath unless service.dest_dir.directory?
+      cp temp.path, service.dest
+
+      # Clear tempfile.
+      temp.close
+
+      chmod 0644, service.dest
+    end
+
+    # protections to avoid users editing root services
+    def take_root_ownership(service)
+      return unless root?
+
+      chown "root", "admin", service.dest
+      plist_data = service.dest.read
+      plist = begin
+        Plist.parse_xml(plist_data)
+      rescue
+        nil
+      end
+      return unless plist
+
+      root_paths = []
+
+      program_location = plist["ProgramArguments"]&.first
+      key = "first ProgramArguments value"
+      if program_location.blank?
+        program_location = plist["Program"]
+        key = "Program"
+      end
+
+      if program_location.present?
+        Dir.chdir("/") do
+          if File.exist?(program_location)
+            program_location_path = Pathname(program_location).realpath
+            root_paths += [
+              program_location_path,
+              program_location_path.parent.realpath,
+            ]
+          else
+            opoo <<~EOS
+              #{service.name}: the #{key} does not exist:
+                #{program_location}
+            EOS
+          end
+        end
+      end
+      if (formula = service.formula)
+        root_paths += [
+          formula.opt_prefix,
+          formula.linked_keg,
+          formula.bin,
+          formula.sbin,
+        ]
+      end
+      root_paths = root_paths.sort.uniq.select(&:exist?)
+
+      opoo <<~EOS
+        Taking root:admin ownership of some #{service.formula} paths:
+          #{root_paths.join("\n  ")}
+        This will require manual removal of these paths using `sudo rm` on
+        brew upgrade/reinstall/uninstall.
+      EOS
+      chown "root", "admin", root_paths
+      chmod "+t", root_paths
+    end
+
+    def launchctl_load(service, enable:)
+      if root? && !service.plist_startup?
+        opoo "#{service.name} must be run as non-root to start at user login!"
+      elsif !root? && service.plist_startup?
+        opoo "#{service.name} must be run as root to start at system startup!"
+      end
+
+      @plist ||= enable ? service.dest : service.plist
+
+      safe_system launchctl, "enable", "#{domain_target}/#{service.label}" if enable
+      safe_system launchctl, "bootstrap", domain_target, @plist
+
+      function = enable ? "started" : "ran"
+      ohai("Successfully #{function} `#{service.name}` (label: #{service.label})")
     end
   end
 end

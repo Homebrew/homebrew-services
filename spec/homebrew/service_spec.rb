@@ -133,8 +133,8 @@ describe Homebrew::Service do
   describe "#generate_plist?" do
     it "outputs error for plist" do
       expect do
-        service.generate_plist(nil, args: [])
-      end.to output("Could not read the plist for `mysql`!").to_stdout
+        service.generate_plist(nil)
+      end.to output("Could not read the plist for `mysql`!\n").to_stdout
     end
   end
 end
