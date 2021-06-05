@@ -30,12 +30,20 @@ module Homebrew
 
     # Label delegates with formula.plist_name (e.g., `homebrew.mxcl.<formula>`).
     def label
-      @label ||= formula.plist_name
+      @label ||= if ServicesCli.launchctl?
+        formula.plist_name
+      elsif ServicesCli.systemctl?
+        formula.service_name
+      end
     end
 
     # Path to a static plist file. This is always `homebrew.mxcl.<formula>.plist`.
     def plist
-      @plist ||= formula.plist_path
+      @plist ||= if ServicesCli.launchctl?
+        formula.plist_path
+      elsif ServicesCli.systemctl?
+        formula.systemd_service_path
+      end
     end
 
     # Whether the plist should be launched at startup
@@ -71,8 +79,12 @@ module Homebrew
 
     # Returns `true` if the service is loaded, else false.
     def loaded?
-      # TODO: find replacement for deprecated "list"
-      quiet_system ServicesCli.launchctl, "list", label
+      if ServicesCli.launchctl?
+        # TODO: find replacement for deprecated "list"
+        quiet_system ServicesCli.launchctl, "list", label
+      elsif ServicesCli.systemctl?
+        quiet_system ServicesCli.systemctl, ServicesCli.systemctl_scope, "list-unit-files", plist.basename
+      end
     end
 
     # Returns `true` if service is present (.plist is present in LaunchDaemon or LaunchAgent path), else `false`
@@ -101,7 +113,7 @@ module Homebrew
     def error?
       return false if pid?
 
-      exit_code.blank? || exit_code.nonzero?
+      !(exit_code.present? && exit_code.nonzero?)
     end
 
     def unknown_status?
@@ -143,15 +155,27 @@ module Homebrew
     private
 
     def status
-      @status ||= Utils.popen_read("#{ServicesCli.launchctl} list '#{label}'").chomp
+      @status ||= if ServicesCli.launchctl?
+        Utils.popen_read("#{ServicesCli.launchctl} list '#{label}'").chomp
+      elsif ServicesCli.systemctl?
+        Utils.popen_read(ServicesCli.systemctl.to_s, ServicesCli.systemctl_scope.to_s, "status", label.to_s).chomp
+      end
     end
 
     def exit_code_regex
-      /"LastExitStatus"\ =\ ([0-9]*);/
+      if ServicesCli.launchctl?
+        /"LastExitStatus"\ =\ ([0-9]*);/
+      elsif ServicesCli.systemctl?
+        /\(code=exited, status=([0-9]*)\)|\(dead\)/
+      end
     end
 
     def pid_regex
-      /"PID"\ =\ ([0-9]*);/
+      if ServicesCli.launchctl?
+        /"PID"\ =\ ([0-9]*);/
+      elsif ServicesCli.systemctl?
+        /Main PID: ([0-9]*) \((?!code=)/
+      end
     end
 
     def boot_path_plist_present?

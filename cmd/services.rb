@@ -41,13 +41,16 @@ module Homebrew
   def services
     args = services_args.parse
 
-    raise UsageError, "`brew services` is supported only on macOS!" unless OS.mac?
-
     # pbpaste's exit status is a proxy for detecting the use of reattach-to-user-namespace
     raise UsageError, "`brew services` cannot run under tmux!" if ENV["TMUX"] && !quiet_system("/usr/bin/pbpaste")
 
     # Keep this after the .parse to keep --help fast.
     require_relative "../lib/services_cli"
+
+    if !ServicesCli.launchctl? && !ServicesCli.systemctl?
+      raise UsageError,
+            "`brew services` is supported only on macOS or Linux (with systemd)!"
+    end
 
     # Parse arguments.
     subcommand, formula, custom_plist, = args.named
@@ -67,6 +70,11 @@ module Homebrew
       Homebrew::ServicesCli.available_services
     elsif formula
       Service.new(Formulary.factory(formula))
+    end
+
+    if ServicesCli.systemctl?
+      uid = Utils.safe_popen_read("id", "--user").chomp
+      ENV["DBUS_SESSION_BUS_ADDRESS"] = "unix:path=/run/user/#{uid}/bus"
     end
 
     # Dispatch commands and aliases.
