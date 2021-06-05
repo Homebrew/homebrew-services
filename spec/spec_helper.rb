@@ -37,23 +37,12 @@ module Homebrew
   module Utils
     module_function
 
-    def popen_read(cmd)
-      if cmd == "/bin/launchctl list | grep homebrew"
-        "77513   0       homebrew.mxcl.php"
-      else
-        ""
-      end
+    def popen_read(*_cmd)
+      ""
     end
 
-    def safe_popen_read(*args)
-      if args.first == "ps"
-        <<~EOS
-          USER
-          #{ENV["USER"]}
-        EOS
-      else
-        ""
-      end
+    def safe_popen_read(*_args)
+      ""
     end
   end
 
@@ -61,10 +50,14 @@ module Homebrew
     module_function
 
     def which(cmd)
-      `which #{cmd}`.chomp
+      "/bin/#{cmd}"
     end
 
-    def quiet_system(_cmd)
+    def safe_system(*_cmd)
+      ""
+    end
+
+    def quiet_system(*_cmd)
       true
     end
 

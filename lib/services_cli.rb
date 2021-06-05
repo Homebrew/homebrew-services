@@ -15,7 +15,27 @@ module Homebrew
 
     # Path to launchctl binary.
     def launchctl
-      which("launchctl")
+      @launchctl ||= which("launchctl")
+    end
+
+    # Is this a launchctl system
+    def launchctl?
+      launchctl.present?
+    end
+
+    # Path to systemctl binary.
+    def systemctl
+      @systemctl ||= which("systemctl")
+    end
+
+    # Is this a systemd system
+    def systemctl?
+      systemctl.present?
+    end
+
+    # Command scope modifier
+    def systemctl_scope
+      "--user" unless root?
     end
 
     # Woohoo, we are root dude!
@@ -38,12 +58,20 @@ module Homebrew
 
     # Run at boot.
     def boot_path
-      Pathname.new("/Library/LaunchDaemons")
+      if launchctl?
+        Pathname.new("/Library/LaunchDaemons")
+      elsif systemctl?
+        Pathname.new("/usr/lib/systemd/system")
+      end
     end
 
     # Run at login.
     def user_path
-      Pathname.new("#{ENV["HOME"]}/Library/LaunchAgents")
+      if launchctl?
+        Pathname.new("#{ENV["HOME"]}/Library/LaunchAgents")
+      elsif systemctl?
+        Pathname.new("#{ENV["HOME"]}/.config/systemd/user")
+      end
     end
 
     # If root, return `boot_path`, else return `user_path`.
@@ -51,12 +79,16 @@ module Homebrew
       root? ? boot_path : user_path
     end
 
-    # Find all currently running services via launchctl list.
+    # Find all currently running services via launchctl list or systemctl list-units.
     def running
-      # TODO: find replacement for deprecated "list"
-      Utils.popen_read("#{launchctl} list | grep homebrew").chomp.split("\n").map do |svc|
-        Regexp.last_match(1) if svc =~ /(homebrew\.mxcl\..+)\z/
-      end.compact
+      if launchctl?
+        # TODO: find replacement for deprecated "list"
+        Utils.popen_read("#{launchctl} list | grep homebrew").chomp.split("\n").map do |svc|
+          Regexp.last_match(1) if svc =~ /(homebrew\.mxcl\..+)\z/
+        end.compact
+      else
+        safe_system(systemctl, systemctl_scope, "list-units", "--type=service", "--state=running").chomp.split("\n")
+      end
     end
 
     # All available services
@@ -80,39 +112,40 @@ module Homebrew
       true
     end
 
+    def service_get_status(service)
+      if service.pid?
+        :started
+      elsif service.error?
+        puts service.exit_code
+        :error
+      elsif service.unknown_status?
+        :unknown
+      else
+        :stopped
+      end
+    end
+
     # List all available services with status, user, and path to the plist file.
     def list
       formulae = available_services.map do |service|
         formula = {
-          name:   service.formula.name,
-          status: :stopped,
-          user:   nil,
-          plist:  nil,
+          name:  service.formula.name,
+          user:  nil,
+          plist: nil,
         }
 
-        if service.plist_present?(for: :root)
-          formula[:status] = :started
+        if service.service_file_present?(for: :root) && service.pid?
           formula[:user] = "root"
-          formula[:plist] = ServicesCli.boot_path + service.plist.basename
-        elsif service.plist_present?(for: :user)
-          formula[:status] = :started
+          formula[:plist] = ServicesCli.boot_path + service.service_file.basename
+        elsif service.service_file_present?(for: :user) && service.pid?
           formula[:user] = ServicesCli.user_of_process(service.pid)
-          formula[:plist] = ServicesCli.user_path + service.plist.basename
+          formula[:plist] = ServicesCli.user_path + service.service_file.basename
         elsif service.loaded?
-          formula[:status] = :started
           formula[:user] = ServicesCli.user
-          formula[:plist] = service.plist
+          formula[:plist] = service.service_file
         end
 
-        # Check the exit code of the service, might indicate an error
-        if formula[:status] == :started
-          if service.unknown_status?
-            formula[:status] = :unknown
-          elsif service.error?
-            formula[:status] = :error
-          end
-        end
-
+        formula[:status] = service_get_status(service)
         formula
       end
 
@@ -147,11 +180,11 @@ module Homebrew
       end
     end
 
-    # Kill services that don't have a plist file, and remove unused plist files.
+    # Kill services that don't have a service file, and remove unused service files.
     def cleanup
       cleaned = []
 
-      # 1. Kill services that don't have a plist file.
+      # 1. Kill services that don't have a servuce file.
       running.each do |label|
         if (svc = Service.from(label))
           unless svc.dest.file?
@@ -164,11 +197,11 @@ module Homebrew
         end
       end
 
-      # 2. Remove unused plist files.
+      # 2. Remove unused service files.
       Dir["#{path}homebrew.*.{plist,service}"].each do |file|
         next if running.include?(File.basename(file).sub(/\.(plist|service)$/i, ""))
 
-        puts "Removing unused plist #{file}"
+        puts "Removing unused service file #{file}"
         rm file
         cleaned << file
       end
@@ -177,24 +210,24 @@ module Homebrew
     end
 
     # Stop if loaded, then start or run again.
-    def restart(target, plist_file = nil, verbose: false)
+    def restart(target, service_file = nil, verbose: false)
       Array(target).each do |service|
-        was_run = service.loaded? && !service.plist_present?
+        was_run = service.loaded? && !service.service_file_present?
 
         stop(service) if service.loaded?
 
         if was_run
           run(service)
         else
-          start(service, plist_file, verbose: verbose)
+          start(service, service_file, verbose: verbose)
         end
       end
     end
 
-    # Run a service as defined in the formula. This does not clean the plist like `start` does.
+    # Run a service as defined in the formula. This does not clean the service file like `start` does.
     def run(target)
       if target.is_a?(Service)
-        if target.loaded?
+        if target.pid?
           puts "Service `#{target.name}` already running, use `#{bin} restart #{target.name}` to restart."
           return
         elsif root?
@@ -204,39 +237,36 @@ module Homebrew
       end
 
       Array(target).each do |service|
-        launchctl_load(service, enable: false)
+        service_load(service, enable: false)
       end
     end
 
     # Start a service.
-    def start(target, plist_file = nil, verbose: false)
-      if plist_file.present?
-        @plist = Pathname.new plist_file
-        raise UsageError, "Provided plist does not exist" unless @plist.exist?
+    def start(target, service_file = nil, verbose: false)
+      if service_file.present?
+        @service_file = Pathname.new service_file
+        raise UsageError, "Provided service file does not exist" unless @service_file.exist?
       end
       if target.is_a?(Service)
-        if target.loaded?
+        if target.pid?
           puts "Service `#{target.name}` already started, use `#{bin} restart #{target.name}` to restart."
           return
         end
 
-        if !target.installed?
-          odie "Formula `#{target.name}` is not installed."
-        elsif !target.plist.file? && target.formula.plist.nil?
-          if target.formula.opt_prefix.exist? &&
-             (keg = Keg.for target.formula.opt_prefix) &&
-             keg.plist_installed?
-            @plist ||= Pathname.new Dir["#{keg}/*.{plist,service}"].first
-          else
-            odie "Formula `#{target.name}` has not implemented #plist or installed a locatable .plist file"
-          end
+        odie "Formula `#{target.name}` is not installed." unless target.installed?
+
+        @service_file ||= if target.service_file.exist? || systemctl? || target.formula.plist.blank?
+          nil
+        elsif target.formula.opt_prefix.exist? && (keg = Keg.for target.formula.opt_prefix) && keg.plist_installed?
+          service_file = Dir["#{keg}/*#{target.service_file.extname}"].first
+          Pathname.new service_file if service_file.present?
         end
       end
 
-      Array(target).reject(&:loaded?).each do |service|
-        install_service_file(service) if @plist.blank?
+      Array(target).reject(&:pid?).each do |service|
+        install_service_file(service) if @service_file.blank?
 
-        if @plist.blank? && verbose
+        if @service_file.blank? && verbose
           ohai "Generated plist for #{service.formula.name}:"
           puts "   #{service.dest.read.gsub("\n", "\n   ")}"
           puts
@@ -244,15 +274,15 @@ module Homebrew
 
         next if take_root_ownership(service).nil? && root?
 
-        launchctl_load(service, enable: true)
+        service_load(service, enable: true)
       end
     end
 
-    # Stop a service, or kill it if no plist file is available.
+    # Stop a service, or kill it if no service file is available.
     def stop(target)
       if target.is_a?(Service) && !target.loaded?
-        rm target.dest if target.dest.exist? # get rid of installed plist anyway, dude
-        if target.plist_present?
+        rm target.dest if target.dest.exist? # get rid of installed service file anyway, dude
+        if target.service_file_present?
           odie <<~EOS
             Service `#{target.name}` is started as `#{target.owner}`. Try:
               #{"sudo " unless ServicesCli.root?}#{bin} stop #{target.name}
@@ -264,13 +294,18 @@ module Homebrew
 
       Array(target).select(&:loaded?).each do |service|
         puts "Stopping `#{service.name}`... (might take a while)"
-        quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
+        if systemctl?
+          quiet_system systemctl, systemctl_scope, "stop", service.service_name
+          next
+        end
+
+        quiet_system launchctl, "bootout", "#{domain_target}/#{service.service_name}"
         while $CHILD_STATUS.to_i == 9216 || service.loaded?
           sleep(1)
-          quiet_system launchctl, "bootout", "#{domain_target}/#{service.label}"
+          quiet_system launchctl, "bootout", "#{domain_target}/#{service.service_name}"
         end
         if service.dest.exist?
-          ohai "Successfully stopped `#{service.name}` (label: #{service.label})"
+          ohai "Successfully stopped `#{service.name}` (label: #{service.service_name})"
         elsif service.loaded?
           kill(service)
         end
@@ -280,29 +315,14 @@ module Homebrew
 
     # Kill a service that has no plist file.
     def kill(service)
-      quiet_system launchctl, "kill", "SIGTERM", "#{domain_target}/#{service.label}"
+      quiet_system launchctl, "kill", "SIGTERM", "#{domain_target}/#{service.service_name}"
       while service.loaded?
         sleep(5)
         break if service.loaded?
 
-        quiet_system launchctl, "kill", "SIGKILL", "#{domain_target}/#{service.label}"
+        quiet_system launchctl, "kill", "SIGKILL", "#{domain_target}/#{service.service_name}"
       end
-      ohai "Successfully stopped `#{service.name}` via #{service.label}"
-    end
-
-    def install_service_file(service)
-      temp = Tempfile.new(service.label)
-      temp << service.generate_plist(@plist)
-      temp.flush
-
-      rm service.dest if service.dest.exist?
-      service.dest_dir.mkpath unless service.dest_dir.directory?
-      cp temp.path, service.dest
-
-      # Clear tempfile.
-      temp.close
-
-      chmod 0644, service.dest
+      ohai "Successfully stopped `#{service.name}` via #{service.service_name}"
     end
 
     # protections to avoid users editing root services
@@ -364,19 +384,52 @@ module Homebrew
     end
 
     def launchctl_load(service, enable:)
-      if root? && !service.plist_startup?
+      safe_system launchctl, "enable", "#{domain_target}/#{service.service_name}" if enable
+      safe_system launchctl, "bootstrap", domain_target, @service_file
+    end
+
+    def systemd_load(service, enable:)
+      safe_system systemctl, systemctl_scope, "start", service.service_name
+      safe_system systemctl, systemctl_scope, "enable", service.service_name if enable
+    end
+
+    def service_load(service, enable:)
+      if root? && !service.service_startup?
         opoo "#{service.name} must be run as non-root to start at user login!"
-      elsif !root? && service.plist_startup?
+      elsif !root? && service.service_startup?
         opoo "#{service.name} must be run as root to start at system startup!"
       end
 
-      @plist ||= enable ? service.dest : service.plist
-
-      safe_system launchctl, "enable", "#{domain_target}/#{service.label}" if enable
-      safe_system launchctl, "bootstrap", domain_target, @plist
+      @service_file ||= enable ? service.dest : service.service_file
+      if launchctl?
+        launchctl_load(service, enable: enable)
+      elsif systemctl?
+        systemd_load(service, enable: enable)
+      end
 
       function = enable ? "started" : "ran"
-      ohai("Successfully #{function} `#{service.name}` (label: #{service.label})")
+      ohai("Successfully #{function} `#{service.name}` (label: #{service.service_name})")
+    end
+
+    def install_service_file(service)
+      unless service.service_file.exist?
+        odie "Formula `#{service.name}` has not implemented #plist, #service or installed a locatable service file"
+      end
+
+      temp = Tempfile.new(service.service_name)
+      temp << service.service_file.read
+      temp.flush
+
+      rm service.dest if service.dest.exist?
+      service.dest_dir.mkpath unless service.dest_dir.directory?
+      cp temp.path, service.dest
+
+      # Clear tempfile.
+      temp.close
+
+      chmod 0644, service.dest
+
+      safe_system systemctl, systemctl_scope, "daemon-reload" if systemctl?
     end
   end
 end

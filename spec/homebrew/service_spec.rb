@@ -7,16 +7,25 @@ describe Homebrew::Service do
 
   let(:formula) do
     OpenStruct.new(
-      opt_prefix: "/usr/local/opt/mysql/",
-      name:       "mysql",
-      plist_name: "plist-mysql-test",
-      plist_path: Pathname.new("/usr/local/opt/mysql/homebrew.mysql.plist"),
+      opt_prefix:           "/usr/local/opt/mysql/",
+      name:                 "mysql",
+      plist_name:           "plist-mysql-test",
+      service_name:         "plist-mysql-test",
+      plist_path:           Pathname.new("/usr/local/opt/mysql/homebrew.mysql.plist"),
+      systemd_service_path: Pathname.new("/usr/local/opt/mysql/homebrew.mysql.service"),
     )
   end
 
-  describe "#plist" do
-    it "outputs the full plist path" do
-      expect(service.plist.to_s).to eq("/usr/local/opt/mysql/homebrew.mysql.plist")
+  describe "#service_file" do
+    it "macOS - outputs the full service file path" do
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(true)
+      expect(service.service_file.to_s).to eq("/usr/local/opt/mysql/homebrew.mysql.plist")
+    end
+
+    it "systemD - outputs the full service file path" do
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(false)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(true)
+      expect(service.service_file.to_s).to eq("/usr/local/opt/mysql/homebrew.mysql.service")
     end
   end
 
@@ -26,66 +35,126 @@ describe Homebrew::Service do
     end
   end
 
-  describe "#label" do
-    it "outputs the plist name" do
-      expect(service.label).to eq("plist-mysql-test")
+  describe "#service_name" do
+    it "macOS - outputs the service name" do
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(true)
+      expect(service.service_name).to eq("plist-mysql-test")
+    end
+
+    it "systemD - outputs the service name" do
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(false)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(true)
+      expect(service.service_name).to eq("plist-mysql-test")
     end
   end
 
   describe "#dest_dir" do
-    it "outputs the destination directory for the plist" do
+    it "macOS - user - outputs the destination directory for the service file" do
       ENV["HOME"] = "/tmp_home"
+      allow(Homebrew::ServicesCli).to receive(:root?).and_return(false)
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(true)
       expect(service.dest_dir.to_s).to eq("/tmp_home/Library/LaunchAgents")
+    end
+
+    it "macOS - root - outputs the destination directory for the service file" do
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(true)
+      allow(Homebrew::ServicesCli).to receive(:root?).and_return(true)
+      expect(service.dest_dir.to_s).to eq("/Library/LaunchDaemons")
+    end
+
+    it "systemD - user - outputs the destination directory for the service file" do
+      ENV["HOME"] = "/tmp_home"
+      allow(Homebrew::ServicesCli).to receive(:root?).and_return(false)
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(false)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(true)
+      expect(service.dest_dir.to_s).to eq("/tmp_home/.config/systemd/user")
+    end
+
+    it "systemD - root - outputs the destination directory for the service file" do
+      allow(Homebrew::ServicesCli).to receive(:root?).and_return(true)
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(false)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(true)
+      expect(service.dest_dir.to_s).to eq("/usr/lib/systemd/system")
     end
   end
 
   describe "#dest" do
-    it "outputs the destination for the plist" do
+    it "macOS - outputs the destination for the service file" do
       ENV["HOME"] = "/tmp_home"
+
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(true)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(false)
       expect(service.dest.to_s).to eq("/tmp_home/Library/LaunchAgents/homebrew.mysql.plist")
+    end
+
+    it "systemD - outputs the destination for the service file" do
+      ENV["HOME"] = "/tmp_home"
+
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(false)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(true)
+      expect(service.dest.to_s).to eq("/tmp_home/.config/systemd/user/homebrew.mysql.service")
     end
   end
 
   describe "#installed?" do
-    it "outputs if the plist formula is installed" do
+    it "outputs if the service formula is installed" do
       expect(service.installed?).to eq(nil)
     end
   end
 
   describe "#plist?" do
-    it "outputs if the plist is available" do
+    it "outputs if the service is available" do
       expect(service.plist?).to eq(false)
     end
   end
 
   describe "#loaded?" do
-    it "outputs if the plist is loaded" do
+    it "macOS - outputs if the service is loaded" do
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(true)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(false)
+      allow(service).to receive(:quiet_system).and_return(false)
+      expect(service.loaded?).to eq(false)
+    end
+
+    it "systemD - outputs if the service is loaded" do
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(false)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(true)
+      allow(service).to receive(:quiet_system).and_return(false)
       expect(service.loaded?).to eq(false)
     end
   end
 
-  describe "#plist_present?" do
-    it "outputs if the plist is present" do
-      expect(service.plist_present?).to eq(false)
+  describe "#service_file_present?" do
+    it "macOS - outputs if the service file is present" do
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(true)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(false)
+      expect(service.service_file_present?).to eq(false)
     end
 
-    it "outputs if the plist is present for root" do
-      expect(service.plist_present?(for: :root)).to eq(false)
+    it "macOS - outputs if the service file is present for root" do
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(true)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(false)
+      expect(service.service_file_present?(for: :root)).to eq(false)
     end
 
-    it "outputs if the plist is present for user" do
-      expect(service.plist_present?(for: :user)).to eq(false)
+    it "macOS - outputs if the service file is present for user" do
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(true)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(false)
+      expect(service.service_file_present?(for: :user)).to eq(false)
     end
   end
 
   describe "#owner?" do
-    it "outputs the plist owner" do
+    it "macOS - outputs the service file owner" do
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(true)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(false)
       expect(service.owner).to eq(nil)
     end
   end
 
   describe "#pid?" do
     it "outputs false because there is not pid" do
+      allow(service).to receive(:pid).and_return(nil)
       expect(service.pid?).to eq(false)
     end
   end
@@ -97,8 +166,8 @@ describe Homebrew::Service do
   end
 
   describe "#error?" do
-    it "outputs true because there is no PID" do
-      expect(service.error?).to eq(true)
+    it "outputs false because there is no PID" do
+      expect(service.error?).to eq(false)
     end
   end
 
@@ -114,9 +183,9 @@ describe Homebrew::Service do
     end
   end
 
-  describe "#plist_startup?" do
+  describe "#service_startup?" do
     it "outputs false since there is no startup" do
-      expect(service.plist_startup?).to eq(false)
+      expect(service.service_startup?).to eq(false)
     end
 
     it "outputs true since there is a startup" do
@@ -126,12 +195,14 @@ describe Homebrew::Service do
 
       service = described_class.new(formula)
 
-      expect(service.plist_startup?).to eq(true)
+      expect(service.service_startup?).to eq(true)
     end
   end
 
   describe "#generate_plist?" do
-    it "outputs error for plist" do
+    it "macOS - outputs error for plist" do
+      allow(Homebrew::ServicesCli).to receive(:launchctl?).and_return(true)
+      allow(Homebrew::ServicesCli).to receive(:systemctl?).and_return(false)
       expect do
         service.generate_plist(nil)
       end.to output("Could not read the plist for `mysql`!\n").to_stdout
