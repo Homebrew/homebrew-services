@@ -118,11 +118,14 @@ module Homebrew
     end
 
     # Generate that plist file, dude.
-    def generate_plist(data = nil)
+    def generate_plist(data = nil, args:)
       data ||= plist.file? ? plist : formula.plist
 
       if data.respond_to?(:file?) && data.file?
         data = data.read
+      elsif data.respond_to?(:keys) && data.key?(:url)
+        require "open-uri"
+        data = URI.parse(data).read
       elsif !data
         odie "Could not read the plist for `#{name}`!"
       end
@@ -135,6 +138,12 @@ module Homebrew
       # Always remove the "UserName" as it doesn't work since 10.11.5
       if %r{<key>UserName</key>}.match?(data)
         data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, "")
+      end
+
+      if args.verbose?
+        ohai "Generated plist for #{formula.name}:"
+        puts "   #{data.gsub("\n", "\n   ")}"
+        puts
       end
 
       data
