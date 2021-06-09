@@ -47,6 +47,15 @@ jobs:
         brew services list | grep redis
         sleep 5
         redis-cli INFO | grep uptime_in_seconds
+        
+    - name: Test restart command
+      run: |
+        brew services stop redis
+        sleep 5
+        brew services restart redis
+        brew services list | grep redis
+        sleep 5
+        redis-cli INFO | grep uptime_in_seconds        
 
     - name: Test stop command
       run: |
