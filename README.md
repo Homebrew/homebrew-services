@@ -15,6 +15,7 @@ This does not (and cannot) work with Homebrew on Linux (so don't file Linux issu
 ## Usage
 
 See [the `brew services` section of the `brew man` output](https://docs.brew.sh/Manpage#services-subcommand) or `brew services --help`.
+To specify a plist file use `brew services <command> <formula> --file=<file>`.
 
 
 ## Tests

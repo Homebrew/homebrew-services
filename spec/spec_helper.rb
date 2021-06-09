@@ -56,6 +56,10 @@ module Homebrew
     def quiet_system(_cmd)
       true
     end
+
+    def odie(string)
+      puts string
+    end
   end
 
   class Service
@@ -65,7 +69,6 @@ module Homebrew
 
     def odie(string)
       puts string
-      exit
     end
   end
 end

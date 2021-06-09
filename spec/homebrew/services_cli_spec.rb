@@ -5,14 +5,13 @@ require "spec_helper"
 describe Homebrew::ServicesCli do
   subject(:services_cli) { described_class }
 
-  describe "#run!" do
-    let(:subcommand) { "invalid_command" }
+  describe "#check" do
     let(:formula) { nil }
-    let(:custom_plist) { nil }
-    let(:args) { OpenStruct.new(named: [subcommand, formula, custom_plist]) }
 
     it "prints help message on invalid command" do
-      expect { services_cli.run!(args) }.to raise_error(UsageError, "unknown subcommand: #{subcommand}")
+      expect do
+        services_cli.check(formula)
+      end.to output("Formula(e) missing, please provide a formula name or use --all\n").to_stdout
     end
   end
 end
