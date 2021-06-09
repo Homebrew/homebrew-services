@@ -186,7 +186,7 @@ module Homebrew
         if was_run
           run(service)
         else
-          start(service, plist_file, verbose)
+          start(service, plist_file, verbose: verbose)
         end
       end
     end
