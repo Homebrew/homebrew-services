@@ -64,7 +64,7 @@ module Homebrew
     end
 
     target = if args.all?
-      available_services
+      Homebrew::ServicesCli.available_services
     elsif formula
       Service.new(Formulary.factory(formula))
     end
