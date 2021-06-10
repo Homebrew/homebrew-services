@@ -25,7 +25,7 @@ module Homebrew
 
     # Current user running `[sudo] brew services`.
     def user
-      @user ||= ENV["USER"]
+      @user ||= ENV["USER"].presence || Utils.safe_popen_read("/usr/bin/whoami").chomp
     end
 
     def user_of_process(pid)
