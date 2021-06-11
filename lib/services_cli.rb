@@ -25,12 +25,12 @@ module Homebrew
 
     # Current user running `[sudo] brew services`.
     def user
-      @user ||= Utils.safe_popen_read("/usr/bin/whoami").chomp
+      @user ||= ENV["USER"].presence || Utils.safe_popen_read("/usr/bin/whoami").chomp
     end
 
     def user_of_process(pid)
       if pid.nil? || pid.zero?
-        ENV["HOME"].split("/").last
+        user
       else
         Utils.safe_popen_read("ps", "-o", "user", "-p", pid.to_s).lines.second.chomp
       end

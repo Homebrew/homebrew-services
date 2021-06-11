@@ -37,12 +37,23 @@ module Homebrew
   module Utils
     module_function
 
-    def popen_read(_cmd)
-      ""
+    def popen_read(cmd)
+      if cmd == "/bin/launchctl list | grep homebrew"
+        "77513   0       homebrew.mxcl.php"
+      else
+        ""
+      end
     end
 
-    def safe_popen_read(_cmd)
-      ""
+    def safe_popen_read(*args)
+      if args.first == "ps"
+        <<~EOS
+          USER
+          #{ENV["USER"]}
+        EOS
+      else
+        ""
+      end
     end
   end
 
@@ -71,4 +82,12 @@ module Homebrew
       puts string
     end
   end
+end
+
+class Array
+  def second
+    length <= 1 ? nil : self[1]
+  end
+
+  def verbose?; end
 end
