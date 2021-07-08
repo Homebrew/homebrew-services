@@ -42,7 +42,10 @@ module Homebrew
     args = services_args.parse
 
     # pbpaste's exit status is a proxy for detecting the use of reattach-to-user-namespace
-    raise UsageError, "`brew services` cannot run under tmux!" if ENV["TMUX"] && !quiet_system("/usr/bin/pbpaste")
+    if ENV["HOMEBREW_TMUX"] && (File.exist?("/usr/bin/pbpaste") && !quiet_system("/usr/bin/pbpaste"))
+      raise UsageError,
+            "`brew services` cannot run under tmux!"
+    end
 
     # Keep this after the .parse to keep --help fast.
     require_relative "../lib/services_cli"
@@ -72,10 +75,7 @@ module Homebrew
       Service.new(Formulary.factory(formula))
     end
 
-    if ServicesCli.systemctl?
-      uid = Utils.safe_popen_read("id", "--user").chomp
-      ENV["DBUS_SESSION_BUS_ADDRESS"] = "unix:path=/run/user/#{uid}/bus"
-    end
+    ENV["DBUS_SESSION_BUS_ADDRESS"] = ENV["HOMEBREW_DBUS_SESSION_BUS_ADDRESS"] if ServicesCli.systemctl?
 
     # Dispatch commands and aliases.
     case subcommand.presence
