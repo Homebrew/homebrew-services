@@ -113,7 +113,7 @@ module Homebrew
     def error?
       return false if pid?
 
-      !(exit_code.present? && exit_code.nonzero?)
+      exit_code.present? && exit_code.nonzero?
     end
 
     def unknown_status?
