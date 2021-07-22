@@ -166,8 +166,8 @@ describe Homebrew::Service do
   end
 
   describe "#error?" do
-    it "outputs true because there is no PID" do
-      expect(service.error?).to eq(true)
+    it "outputs false because there is no PID" do
+      expect(service.error?).to eq(false)
     end
   end
 
