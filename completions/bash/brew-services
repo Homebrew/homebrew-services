@@ -3,7 +3,7 @@
 #########################################################################
 
 # Called once on shell startup
-HOMEBREW_PREFIX="$(brew --prefix)"
+: "${HOMEBREW_PREFIX:=$(brew --prefix)}"
 
 # Complete brew services xxxxxxx
 _brew_services() {
