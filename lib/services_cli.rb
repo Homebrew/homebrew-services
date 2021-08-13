@@ -127,10 +127,10 @@ module Homebrew
     def list
       formulae = available_services.map do |service|
         formula = {
-          name:  service.formula.name,
+          name:   service.formula.name,
           status: :stopped,
-          user:  nil,
-          plist: nil,
+          user:   nil,
+          plist:  nil,
         }
 
         if service.service_file_present?(for: :root) && service.pid?
