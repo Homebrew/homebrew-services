@@ -157,23 +157,14 @@ describe Homebrew::ServicesCli do
     end
   end
 
-  describe "#service_get_status" do
-    it "checks the fallback" do
-      service = OpenStruct.new(
-        pid?:            false,
-        error?:          false,
-        unknown_status?: false,
-      )
-      expect(services_cli.service_get_status(service)).to eq(:stopped)
-    end
-
+  describe "#service_get_operational_status" do
     it "checks unknown_status" do
       service = OpenStruct.new(
         pid?:            false,
         error?:          false,
         unknown_status?: true,
       )
-      expect(services_cli.service_get_status(service)).to eq(:unknown)
+      expect(services_cli.service_get_operational_status(service)).to eq(:unknown)
     end
 
     it "checks error" do
@@ -182,7 +173,7 @@ describe Homebrew::ServicesCli do
         error?:          true,
         unknown_status?: false,
       )
-      expect(services_cli.service_get_status(service)).to eq(:error)
+      expect(services_cli.service_get_operational_status(service)).to eq(:error)
     end
 
     it "checks error output" do
@@ -193,7 +184,7 @@ describe Homebrew::ServicesCli do
         exit_code:       40,
       )
       expect do
-        services_cli.service_get_status(service)
+        services_cli.service_get_operational_status(service)
       end.to output("40\n").to_stdout
     end
 
@@ -203,7 +194,7 @@ describe Homebrew::ServicesCli do
         error?:          false,
         unknown_status?: false,
       )
-      expect(services_cli.service_get_status(service)).to eq(:started)
+      expect(services_cli.service_get_operational_status(service)).to eq(:started)
     end
   end
 end

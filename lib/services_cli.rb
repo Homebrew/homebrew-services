@@ -112,7 +112,7 @@ module Homebrew
       true
     end
 
-    def service_get_status(service)
+    def service_get_operational_status(service)
       if service.pid?
         :started
       elsif service.error?
@@ -120,8 +120,6 @@ module Homebrew
         :error
       elsif service.unknown_status?
         :unknown
-      else
-        :stopped
       end
     end
 
@@ -130,6 +128,7 @@ module Homebrew
       formulae = available_services.map do |service|
         formula = {
           name:  service.formula.name,
+          status: :stopped,
           user:  nil,
           plist: nil,
         }
@@ -145,7 +144,9 @@ module Homebrew
           formula[:plist] = service.service_file
         end
 
-        formula[:status] = service_get_status(service)
+        # If we have a plist or a user defined, check if the service is running or errored.
+        formula[:status] = service_get_operational_status(service) if formula[:user] && formula[:plist]
+
         formula
       end
 
