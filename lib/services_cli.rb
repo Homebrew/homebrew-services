@@ -276,6 +276,7 @@ module Homebrew
         next if take_root_ownership(service).nil? && root?
 
         service_load(service, enable: true)
+        @service_file = nil
       end
     end
 
