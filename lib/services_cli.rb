@@ -245,9 +245,10 @@ module Homebrew
     # Start a service.
     def start(target, service_file = nil, verbose: false)
       if service_file.present?
-        @service_file = Pathname.new service_file
-        raise UsageError, "Provided service file does not exist" unless @service_file.exist?
+        file = Pathname.new service_file
+        raise UsageError, "Provided service file does not exist" unless file.exist?
       end
+
       if target.is_a?(Service)
         if target.pid?
           puts "Service `#{target.name}` already started, use `#{bin} restart #{target.name}` to restart."
@@ -256,7 +257,7 @@ module Homebrew
 
         odie "Formula `#{target.name}` is not installed." unless target.installed?
 
-        @service_file ||= if target.service_file.exist? || systemctl? || target.formula.plist.blank?
+        file ||= if target.service_file.exist? || systemctl? || target.formula.plist.blank?
           nil
         elsif target.formula.opt_prefix.exist? && (keg = Keg.for target.formula.opt_prefix) && keg.plist_installed?
           service_file = Dir["#{keg}/*#{target.service_file.extname}"].first
@@ -265,9 +266,9 @@ module Homebrew
       end
 
       Array(target).reject(&:pid?).each do |service|
-        install_service_file(service) if @service_file.blank?
+        install_service_file(service, file)
 
-        if @service_file.blank? && verbose
+        if file.blank? && verbose
           ohai "Generated plist for #{service.formula.name}:"
           puts "   #{service.dest.read.gsub("\n", "\n   ")}"
           puts
@@ -384,9 +385,9 @@ module Homebrew
       chmod "+t", root_paths
     end
 
-    def launchctl_load(service, enable:)
+    def launchctl_load(service, file:, enable:)
       safe_system launchctl, "enable", "#{domain_target}/#{service.service_name}" if enable
-      safe_system launchctl, "bootstrap", domain_target, @service_file
+      safe_system launchctl, "bootstrap", domain_target, file
     end
 
     def systemd_load(service, enable:)
@@ -401,9 +402,9 @@ module Homebrew
         opoo "#{service.name} must be run as root to start at system startup!"
       end
 
-      @service_file ||= enable ? service.dest : service.service_file
       if launchctl?
-        launchctl_load(service, enable: enable)
+        file = enable ? service.dest : service.service_file
+        launchctl_load(service, file: file, enable: enable)
       elsif systemctl?
         systemd_load(service, enable: enable)
       end
@@ -412,13 +413,17 @@ module Homebrew
       ohai("Successfully #{function} `#{service.name}` (label: #{service.service_name})")
     end
 
-    def install_service_file(service)
+    def install_service_file(service, file)
       unless service.service_file.exist?
         odie "Formula `#{service.name}` has not implemented #plist, #service or installed a locatable service file"
       end
 
       temp = Tempfile.new(service.service_name)
-      temp << service.service_file.read
+      if file.blank?
+        temp << service.service_file.read
+      else
+        temp << file.read
+      end
       temp.flush
 
       rm service.dest if service.dest.exist?
