@@ -419,10 +419,10 @@ module Homebrew
       end
 
       temp = Tempfile.new(service.service_name)
-      if file.blank?
-        temp << service.service_file.read
+      temp << if file.blank?
+        service.service_file.read
       else
-        temp << file.read
+        file.read
       end
       temp.flush
 
