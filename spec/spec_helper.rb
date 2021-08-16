@@ -33,19 +33,19 @@ RSpec.configure do |config|
   end
 end
 
-module Homebrew
-  module Utils
-    module_function
+module Utils
+  module_function
 
-    def popen_read(*_cmd)
-      ""
-    end
-
-    def safe_popen_read(*_args)
-      ""
-    end
+  def popen_read(*_cmd)
+    ""
   end
 
+  def safe_popen_read(*_args)
+    ""
+  end
+end
+
+module Service
   module ServicesCli
     module_function
 
@@ -66,7 +66,7 @@ module Homebrew
     end
   end
 
-  class Service
+  class FormulaWrapper
     def quiet_system(*_args)
       false
     end

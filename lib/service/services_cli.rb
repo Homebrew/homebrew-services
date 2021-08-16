@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "service"
-
-module Homebrew
+module Service
   module ServicesCli
     extend FileUtils
 
@@ -83,19 +81,20 @@ module Homebrew
     def running
       if launchctl?
         # TODO: find replacement for deprecated "list"
-        Utils.popen_read("#{launchctl} list | grep homebrew").chomp.split("\n").map do |svc|
-          Regexp.last_match(1) if svc =~ /(homebrew\.mxcl\..+)\z/
-        end.compact
+        Utils.popen_read("#{launchctl} list | grep homebrew")
       else
-        safe_system(systemctl, systemctl_scope, "list-units", "--type=service", "--state=running").chomp.split("\n")
-      end
+        Utils.popen_read(systemctl, systemctl_scope, "list-units", "--type=service", "--state=running", "--no-pager",
+                         "--no-legend")
+      end.chomp.split("\n").map do |svc|
+        Regexp.last_match(1) if svc =~ /\s?(homebrew\.[a-z.]*)\s?/
+      end.compact
     end
 
     # All available services
     def available_services
       require "formula"
 
-      Formula.installed.map { |formula| Service.new(formula) }.select(&:plist?).sort_by(&:name)
+      Formula.installed.map { |formula| FormulaWrapper.new(formula) }.select(&:plist?).sort_by(&:name)
     end
 
     def domain_target
@@ -181,13 +180,11 @@ module Homebrew
       end
     end
 
-    # Kill services that don't have a service file, and remove unused service files.
-    def cleanup
+    # Kill services that don't have a service file
+    def kill_orphaned_services
       cleaned = []
-
-      # 1. Kill services that don't have a servuce file.
       running.each do |label|
-        if (svc = Service.from(label))
+        if (svc = FormulaWrapper.from(label))
           unless svc.dest.file?
             puts format("%-15.15<name>s #{Tty.bold}stale#{Tty.reset} => killing service...", name: svc.name)
             kill(svc)
@@ -197,8 +194,11 @@ module Homebrew
           opoo "Service #{label} not managed by `#{bin}` => skipping"
         end
       end
+      cleaned
+    end
 
-      # 2. Remove unused service files.
+    def remove_unused_service_files
+      cleaned = []
       Dir["#{path}homebrew.*.{plist,service}"].each do |file|
         next if running.include?(File.basename(file).sub(/\.(plist|service)$/i, ""))
 
@@ -207,7 +207,7 @@ module Homebrew
         cleaned << file
       end
 
-      puts "All #{root? ? "root" : "user-space"} services OK, nothing cleaned..." if cleaned.empty?
+      cleaned
     end
 
     # Stop if loaded, then start or run again.
@@ -226,7 +226,7 @@ module Homebrew
     end
 
     # Run a service as defined in the formula. This does not clean the service file like `start` does.
-    def run(target)
+    def run(target, verbose: false)
       if target.is_a?(Service)
         if target.pid?
           puts "Service `#{target.name}` already running, use `#{bin} restart #{target.name}` to restart."
@@ -282,7 +282,7 @@ module Homebrew
     end
 
     # Stop a service, or kill it if no service file is available.
-    def stop(target)
+    def stop(target, verbose: false)
       if target.is_a?(Service) && !target.loaded?
         rm target.dest if target.dest.exist? # get rid of installed service file anyway, dude
         if target.service_file_present?
