@@ -48,9 +48,10 @@ module Homebrew
     end
 
     # Keep this after the .parse to keep --help fast.
-    require_relative "../lib/services_cli"
+    require_relative "../lib/service"
+    require "utils"
 
-    if !ServicesCli.launchctl? && !ServicesCli.systemctl?
+    if !Service::ServicesCli.launchctl? && !Service::ServicesCli.systemctl?
       raise UsageError,
             "`brew services` is supported only on macOS or Linux (with systemd)!"
     end
@@ -70,31 +71,27 @@ module Homebrew
     end
 
     target = if args.all?
-      Homebrew::ServicesCli.available_services
+      Service::ServicesCli.available_services
     elsif formula
-      Service.new(Formulary.factory(formula))
+      Service::FormulaWrapper.new(Formulary.factory(formula))
     end
 
-    ENV["DBUS_SESSION_BUS_ADDRESS"] = ENV["HOMEBREW_DBUS_SESSION_BUS_ADDRESS"] if ServicesCli.systemctl?
+    ENV["DBUS_SESSION_BUS_ADDRESS"] = ENV["HOMEBREW_DBUS_SESSION_BUS_ADDRESS"] if Service::ServicesCli.systemctl?
 
     # Dispatch commands and aliases.
     case subcommand.presence
     when nil, "list", "ls"
-      Homebrew::ServicesCli.list
+      Service::Commands::List.run
     when "cleanup", "clean", "cl", "rm"
-      Homebrew::ServicesCli.cleanup
+      Service::Commands::Cleanup.run
     when "restart", "relaunch", "reload", "r"
-      Homebrew::ServicesCli.check(target) &&
-        Homebrew::ServicesCli.restart(target, custom_plist, verbose: args.verbose?)
+      Service::Commands::Restart.run(target, custom_plist, verbose: args.verbose?)
     when "run"
-      Homebrew::ServicesCli.check(target) &&
-        Homebrew::ServicesCli.run(target)
+      Service::Commands::Run.run(target, verbose: args.verbose?)
     when "start", "launch", "load", "s", "l"
-      Homebrew::ServicesCli.check(target) &&
-        Homebrew::ServicesCli.start(target, custom_plist, verbose: args.verbose?)
+      Service::Commands::Start.run(target, custom_plist, verbose: args.verbose?)
     when "stop", "unload", "terminate", "term", "t", "u"
-      Homebrew::ServicesCli.check(target) &&
-        Homebrew::ServicesCli.stop(target)
+      Service::Commands::Stop.run(target, verbose: args.verbose?)
     else
       raise UsageError, "unknown subcommand: `#{subcommand}`"
     end

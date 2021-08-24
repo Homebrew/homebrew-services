@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-describe Homebrew::ServicesCli do
+describe Service::ServicesCli do
   subject(:services_cli) { described_class }
 
   describe "#bin" do
@@ -53,7 +53,7 @@ describe Homebrew::ServicesCli do
     end
 
     it "returns the PID username" do
-      allow(Homebrew::Utils).to receive(:safe_popen_read).and_return <<~EOS
+      allow(Utils).to receive(:safe_popen_read).and_return <<~EOS
         USER
         user
       EOS
@@ -127,7 +127,7 @@ describe Homebrew::ServicesCli do
     it "macOS - returns the currently running services" do
       allow(described_class).to receive(:launchctl?).and_return(true)
       allow(described_class).to receive(:systemctl?).and_return(false)
-      allow(Homebrew::Utils).to receive(:popen_read).and_return <<~EOS
+      allow(Utils).to receive(:popen_read).and_return <<~EOS
         77513   50  homebrew.mxcl.php
       EOS
       expect(services_cli.running).to eq(["homebrew.mxcl.php"])
@@ -135,11 +135,13 @@ describe Homebrew::ServicesCli do
 
     it "systemD - returns the currently running services" do
       allow(described_class).to receive(:launchctl?).and_return(false)
-      allow(described_class).to receive(:systemctl?).and_return(true)
-      allow(described_class).to receive(:safe_system).and_return <<~EOS
-        homebrew.mxcl.php
+      allow(Utils).to receive(:popen_read).and_return <<~EOS
+        homebrew.php.service     loaded active running Homebrew PHP service
+        systemd-udevd.service    loaded active running Rule-based Manager for Device Events and Files
+        udisks2.service          loaded active running Disk Manager
+        user@1000.service        loaded active running User Manager for UID 1000
       EOS
-      expect(services_cli.running).to eq(["homebrew.mxcl.php"])
+      expect(services_cli.running).to eq(["homebrew.php.service"])
     end
   end
 
