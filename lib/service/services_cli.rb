@@ -415,6 +415,8 @@ module Service
     end
 
     def install_service_file(service, file)
+      odie "Formula `#{service.name}` is not installed" unless service.installed?
+
       unless service.service_file.exist?
         odie "Formula `#{service.name}` has not implemented #plist, #service or installed a locatable service file"
       end
