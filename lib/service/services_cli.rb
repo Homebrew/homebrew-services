@@ -50,7 +50,7 @@ module Service
       if pid.nil? || pid.zero?
         user
       else
-        Utils.safe_popen_read("ps", "-o", "user", "-p", pid.to_s).lines.second.chomp
+        Utils.safe_popen_read("ps", "-o", "user", "-p", pid.to_s).lines.second&.chomp
       end
     end
 
