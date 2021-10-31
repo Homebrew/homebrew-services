@@ -90,13 +90,6 @@ module Service
       end.compact
     end
 
-    # All available services
-    def available_services
-      require "formula"
-
-      Formula.installed.map { |formula| FormulaWrapper.new(formula) }.select(&:plist?).sort_by(&:name)
-    end
-
     def domain_target
       if root?
         "system"
@@ -119,64 +112,6 @@ module Service
         :error
       elsif service.unknown_status?
         :unknown
-      end
-    end
-
-    # List all available services with status, user, and path to the plist file.
-    def list
-      formulae = available_services.map do |service|
-        formula = {
-          name:   service.formula.name,
-          status: :stopped,
-          user:   nil,
-          plist:  nil,
-        }
-
-        if service.service_file_present?(for: :root) && service.pid?
-          formula[:user] = "root"
-          formula[:plist] = ServicesCli.boot_path + service.service_file.basename
-        elsif service.service_file_present?(for: :user) && service.pid?
-          formula[:user] = ServicesCli.user_of_process(service.pid)
-          formula[:plist] = ServicesCli.user_path + service.service_file.basename
-        elsif service.loaded?
-          formula[:user] = ServicesCli.user
-          formula[:plist] = service.service_file
-        end
-
-        # If we have a plist or a user defined, check if the service is running or errored.
-        formula[:status] = service_get_operational_status(service) if formula[:user] && formula[:plist]
-
-        formula
-      end
-
-      if formulae.empty?
-        opoo("No services available to control with `#{bin}`")
-        return
-      end
-
-      longest_name = [formulae.max_by { |formula| formula[:name].length }[:name].length, 4].max
-      longest_user = [formulae.map { |formula| formula[:user].nil? ? 4 : formula[:user].length }.max, 4].max
-
-      puts format("#{Tty.bold}%-#{longest_name}.#{longest_name}<name>s %-7.7<status>s " \
-                  "%-#{longest_user}.#{longest_user}<user>s %<plist>s#{Tty.reset}",
-                  name:   "Name",
-                  status: "Status",
-                  user:   "User",
-                  plist:  "Plist")
-      formulae.each do |formula|
-        status = case formula[:status]
-        when :started then "#{Tty.green}started#{Tty.reset}"
-        when :stopped then "stopped"
-        when :error   then "#{Tty.red}error  #{Tty.reset}"
-        when :unknown then "#{Tty.yellow}unknown#{Tty.reset}"
-        end
-
-        puts format("%-#{longest_name}.#{longest_name}<name>s %<status>s " \
-                    "%-#{longest_user}.#{longest_user}<user>s %<plist>s",
-                    name:   formula[:name],
-                    status: status,
-                    user:   formula[:user],
-                    plist:  formula[:plist])
       end
     end
 
