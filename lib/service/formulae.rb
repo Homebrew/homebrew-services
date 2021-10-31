@@ -24,12 +24,12 @@ module Service
 
         if service.service_file_present?(for: :root) && service.pid?
           formula[:user] = "root"
-          formula[:file] = ServicesCli.boot_path + service.service_file.basename
+          formula[:file] = System.boot_path + service.service_file.basename
         elsif service.service_file_present?(for: :user) && service.pid?
-          formula[:user] = ServicesCli.user_of_process(service.pid)
-          formula[:file] = ServicesCli.user_path + service.service_file.basename
+          formula[:user] = System.user_of_process(service.pid)
+          formula[:file] = System.user_path + service.service_file.basename
         elsif service.loaded?
-          formula[:user] = ServicesCli.user
+          formula[:user] = System.user
           formula[:file] = service.service_file
         end
 

@@ -30,18 +30,18 @@ module Service
 
     # service_name delegates with formula.plist_name or formula.service_name for systemd (e.g., `homebrew.<formula>`).
     def service_name
-      @service_name ||= if ServicesCli.launchctl?
+      @service_name ||= if System.launchctl?
         formula.plist_name
-      elsif ServicesCli.systemctl?
+      elsif System.systemctl?
         formula.service_name
       end
     end
 
     # service_file delegates with formula.plist_path or formula.systemd_service_path for systemd.
     def service_file
-      @service_file ||= if ServicesCli.launchctl?
+      @service_file ||= if System.launchctl?
         formula.plist_path
-      elsif ServicesCli.systemctl?
+      elsif System.systemctl?
         formula.systemd_service_path
       end
     end
@@ -53,7 +53,7 @@ module Service
 
     # Path to destination service directory. If run as root, it's `boot_path`, else `user_path`.
     def dest_dir
-      ServicesCli.root? ? ServicesCli.boot_path : ServicesCli.user_path
+      System.root? ? System.boot_path : System.user_path
     end
 
     # Path to destination service. If run as root, it's in `boot_path`, else `user_path`.
@@ -79,11 +79,11 @@ module Service
 
     # Returns `true` if the service is loaded, else false.
     def loaded?
-      if ServicesCli.launchctl?
+      if System.launchctl?
         # TODO: find replacement for deprecated "list"
-        quiet_system ServicesCli.launchctl, "list", service_name
-      elsif ServicesCli.systemctl?
-        quiet_system ServicesCli.systemctl, ServicesCli.systemctl_scope, "list-unit-files", service_file.basename
+        quiet_system System.launchctl, "list", service_name
+      elsif System.systemctl?
+        quiet_system System.systemctl, System.systemctl_scope, "list-unit-files", service_file.basename
       end
     end
 
@@ -156,36 +156,36 @@ module Service
     private
 
     def status
-      @status ||= if ServicesCli.launchctl?
-        Utils.popen_read(ServicesCli.launchctl, "list", service_name).chomp
-      elsif ServicesCli.systemctl?
-        Utils.popen_read(ServicesCli.systemctl.to_s, ServicesCli.systemctl_scope.to_s, "status",
+      @status ||= if System.launchctl?
+        Utils.popen_read(System.launchctl, "list", service_name).chomp
+      elsif System.systemctl?
+        Utils.popen_read(System.systemctl.to_s, System.systemctl_scope.to_s, "status",
                          service_name.to_s).chomp
       end
     end
 
     def exit_code_regex
-      if ServicesCli.launchctl?
+      if System.launchctl?
         /"LastExitStatus"\ =\ ([0-9]*);/
-      elsif ServicesCli.systemctl?
+      elsif System.systemctl?
         /\(code=exited, status=([0-9]*)\)|\(dead\)/
       end
     end
 
     def pid_regex
-      if ServicesCli.launchctl?
+      if System.launchctl?
         /"PID"\ =\ ([0-9]*);/
-      elsif ServicesCli.systemctl?
+      elsif System.systemctl?
         /Main PID: ([0-9]*) \((?!code=)/
       end
     end
 
     def boot_path_service_file_present?
-      (ServicesCli.boot_path + service_file.basename).exist?
+      (System.boot_path + service_file.basename).exist?
     end
 
     def user_path_service_file_present?
-      (ServicesCli.user_path + service_file.basename).exist?
+      (System.user_path + service_file.basename).exist?
     end
 
     private_class_method def self.path_or_label_regex

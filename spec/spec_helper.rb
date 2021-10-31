@@ -46,12 +46,16 @@ module Utils
 end
 
 module Service
-  module ServicesCli
+  module System
     module_function
 
     def which(cmd)
       "/bin/#{cmd}"
     end
+  end
+
+  module ServicesCli
+    module_function
 
     def safe_system(*_cmd)
       ""

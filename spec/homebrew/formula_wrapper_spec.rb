@@ -18,13 +18,13 @@ describe Service::FormulaWrapper do
 
   describe "#service_file" do
     it "macOS - outputs the full service file path" do
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(true)
+      allow(Service::System).to receive(:launchctl?).and_return(true)
       expect(service.service_file.to_s).to eq("/usr/local/opt/mysql/homebrew.mysql.plist")
     end
 
     it "systemD - outputs the full service file path" do
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(false)
-      allow(Service::ServicesCli).to receive(:systemctl?).and_return(true)
+      allow(Service::System).to receive(:launchctl?).and_return(false)
+      allow(Service::System).to receive(:systemctl?).and_return(true)
       expect(service.service_file.to_s).to eq("/usr/local/opt/mysql/homebrew.mysql.service")
     end
   end
@@ -37,13 +37,13 @@ describe Service::FormulaWrapper do
 
   describe "#service_name" do
     it "macOS - outputs the service name" do
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(true)
+      allow(Service::System).to receive(:launchctl?).and_return(true)
       expect(service.service_name).to eq("plist-mysql-test")
     end
 
     it "systemD - outputs the service name" do
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(false)
-      allow(Service::ServicesCli).to receive(:systemctl?).and_return(true)
+      allow(Service::System).to receive(:launchctl?).and_return(false)
+      allow(Service::System).to receive(:systemctl?).and_return(true)
       expect(service.service_name).to eq("plist-mysql-test")
     end
   end
@@ -51,29 +51,29 @@ describe Service::FormulaWrapper do
   describe "#dest_dir" do
     it "macOS - user - outputs the destination directory for the service file" do
       ENV["HOME"] = "/tmp_home"
-      allow(Service::ServicesCli).to receive(:root?).and_return(false)
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(true)
+      allow(Service::System).to receive(:root?).and_return(false)
+      allow(Service::System).to receive(:launchctl?).and_return(true)
       expect(service.dest_dir.to_s).to eq("/tmp_home/Library/LaunchAgents")
     end
 
     it "macOS - root - outputs the destination directory for the service file" do
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(true)
-      allow(Service::ServicesCli).to receive(:root?).and_return(true)
+      allow(Service::System).to receive(:launchctl?).and_return(true)
+      allow(Service::System).to receive(:root?).and_return(true)
       expect(service.dest_dir.to_s).to eq("/Library/LaunchDaemons")
     end
 
     it "systemD - user - outputs the destination directory for the service file" do
       ENV["HOME"] = "/tmp_home"
-      allow(Service::ServicesCli).to receive(:root?).and_return(false)
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(false)
-      allow(Service::ServicesCli).to receive(:systemctl?).and_return(true)
+      allow(Service::System).to receive(:root?).and_return(false)
+      allow(Service::System).to receive(:launchctl?).and_return(false)
+      allow(Service::System).to receive(:systemctl?).and_return(true)
       expect(service.dest_dir.to_s).to eq("/tmp_home/.config/systemd/user")
     end
 
     it "systemD - root - outputs the destination directory for the service file" do
-      allow(Service::ServicesCli).to receive(:root?).and_return(true)
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(false)
-      allow(Service::ServicesCli).to receive(:systemctl?).and_return(true)
+      allow(Service::System).to receive(:root?).and_return(true)
+      allow(Service::System).to receive(:launchctl?).and_return(false)
+      allow(Service::System).to receive(:systemctl?).and_return(true)
       expect(service.dest_dir.to_s).to eq("/usr/lib/systemd/system")
     end
   end
@@ -82,16 +82,16 @@ describe Service::FormulaWrapper do
     it "macOS - outputs the destination for the service file" do
       ENV["HOME"] = "/tmp_home"
 
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(true)
-      allow(Service::ServicesCli).to receive(:systemctl?).and_return(false)
+      allow(Service::System).to receive(:launchctl?).and_return(true)
+      allow(Service::System).to receive(:systemctl?).and_return(false)
       expect(service.dest.to_s).to eq("/tmp_home/Library/LaunchAgents/homebrew.mysql.plist")
     end
 
     it "systemD - outputs the destination for the service file" do
       ENV["HOME"] = "/tmp_home"
 
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(false)
-      allow(Service::ServicesCli).to receive(:systemctl?).and_return(true)
+      allow(Service::System).to receive(:launchctl?).and_return(false)
+      allow(Service::System).to receive(:systemctl?).and_return(true)
       expect(service.dest.to_s).to eq("/tmp_home/.config/systemd/user/homebrew.mysql.service")
     end
   end
@@ -110,15 +110,15 @@ describe Service::FormulaWrapper do
 
   describe "#loaded?" do
     it "macOS - outputs if the service is loaded" do
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(true)
-      allow(Service::ServicesCli).to receive(:systemctl?).and_return(false)
+      allow(Service::System).to receive(:launchctl?).and_return(true)
+      allow(Service::System).to receive(:systemctl?).and_return(false)
       allow(service).to receive(:quiet_system).and_return(false)
       expect(service.loaded?).to eq(false)
     end
 
     it "systemD - outputs if the service is loaded" do
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(false)
-      allow(Service::ServicesCli).to receive(:systemctl?).and_return(true)
+      allow(Service::System).to receive(:launchctl?).and_return(false)
+      allow(Service::System).to receive(:systemctl?).and_return(true)
       allow(service).to receive(:quiet_system).and_return(false)
       expect(service.loaded?).to eq(false)
     end
@@ -126,14 +126,14 @@ describe Service::FormulaWrapper do
 
   describe "#service_file_present?" do
     it "macOS - outputs if the service file is present" do
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(true)
-      allow(Service::ServicesCli).to receive(:systemctl?).and_return(false)
+      allow(Service::System).to receive(:launchctl?).and_return(true)
+      allow(Service::System).to receive(:systemctl?).and_return(false)
       expect(service.service_file_present?).to eq(false)
     end
 
     it "macOS - outputs if the service file is present for root" do
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(true)
-      allow(Service::ServicesCli).to receive(:systemctl?).and_return(false)
+      allow(Service::System).to receive(:launchctl?).and_return(true)
+      allow(Service::System).to receive(:systemctl?).and_return(false)
       expect(service.service_file_present?(for: :root)).to eq(false)
     end
 
@@ -146,8 +146,8 @@ describe Service::FormulaWrapper do
 
   describe "#owner?" do
     it "macOS - outputs the service file owner" do
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(true)
-      allow(Service::ServicesCli).to receive(:systemctl?).and_return(false)
+      allow(Service::System).to receive(:launchctl?).and_return(true)
+      allow(Service::System).to receive(:systemctl?).and_return(false)
       expect(service.owner).to eq(nil)
     end
   end
@@ -201,8 +201,8 @@ describe Service::FormulaWrapper do
 
   describe "#generate_plist?" do
     it "macOS - outputs error for plist" do
-      allow(Service::ServicesCli).to receive(:launchctl?).and_return(true)
-      allow(Service::ServicesCli).to receive(:systemctl?).and_return(false)
+      allow(Service::System).to receive(:launchctl?).and_return(true)
+      allow(Service::System).to receive(:systemctl?).and_return(false)
       expect do
         service.generate_plist(nil)
       end.to output("Could not read the plist for `mysql`!\n").to_stdout

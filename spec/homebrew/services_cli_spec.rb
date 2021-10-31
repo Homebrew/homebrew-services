@@ -11,122 +11,10 @@ describe Service::ServicesCli do
     end
   end
 
-  describe "#launchctl" do
-    it "outputs launchctl command location" do
-      expect(services_cli.launchctl).to eq("/bin/launchctl")
-    end
-  end
-
-  describe "#launchctl?" do
-    it "outputs launchctl presence" do
-      expect(services_cli.launchctl?).to eq(true)
-    end
-  end
-
-  describe "#systemctl?" do
-    it "outputs systemctl presence" do
-      expect(services_cli.systemctl?).to eq(true)
-    end
-  end
-
-  describe "#systemctl" do
-    it "outputs systemctl command location" do
-      expect(services_cli.systemctl).to eq("/bin/systemctl")
-    end
-  end
-
-  describe "#root?" do
-    it "checks if the command is ran as root" do
-      expect(services_cli.root?).to eq(false)
-    end
-  end
-
-  describe "#user" do
-    it "returns the current username" do
-      expect(services_cli.user).to eq(ENV["USER"])
-    end
-  end
-
-  describe "#user_of_process" do
-    it "returns the username for empty PID" do
-      expect(services_cli.user_of_process(nil)).to eq(ENV["USER"])
-    end
-
-    it "returns the PID username" do
-      allow(Utils).to receive(:safe_popen_read).and_return <<~EOS
-        USER
-        user
-      EOS
-      expect(services_cli.user_of_process(50)).to eq("user")
-    end
-  end
-
-  describe "#domain_target" do
-    it "returns the current domain target" do
-      expect(services_cli.domain_target).to match(%r{gui/(\d+)})
-    end
-  end
-
-  describe "#boot_path" do
-    it "returns the boot path" do
-      expect(services_cli.boot_path.to_s).to eq("/Library/LaunchDaemons")
-    end
-  end
-
-  describe "#user_path" do
-    it "macOS - returns the user path" do
-      ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:launchctl?).and_return(true)
-      allow(described_class).to receive(:systemctl?).and_return(false)
-      expect(services_cli.user_path.to_s).to eq("/tmp_home/Library/LaunchAgents")
-    end
-
-    it "systemD - returns the user path" do
-      ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:launchctl?).and_return(false)
-      allow(described_class).to receive(:systemctl?).and_return(true)
-      expect(services_cli.user_path.to_s).to eq("/tmp_home/.config/systemd/user")
-    end
-  end
-
-  describe "#path" do
-    it "macOS - user - returns the current relevant path" do
-      ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:root?).and_return(false)
-      allow(described_class).to receive(:launchctl?).and_return(true)
-      allow(described_class).to receive(:systemctl?).and_return(false)
-      expect(services_cli.path.to_s).to eq("/tmp_home/Library/LaunchAgents")
-    end
-
-    it "macOS - root- returns the current relevant path" do
-      ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:root?).and_return(true)
-      allow(described_class).to receive(:launchctl?).and_return(true)
-      allow(described_class).to receive(:systemctl?).and_return(false)
-      expect(services_cli.path.to_s).to eq("/Library/LaunchDaemons")
-    end
-
-    it "systemD - user - returns the current relevant path" do
-      ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:root?).and_return(false)
-      allow(described_class).to receive(:launchctl?).and_return(false)
-      allow(described_class).to receive(:systemctl?).and_return(true)
-      expect(services_cli.path.to_s).to eq("/tmp_home/.config/systemd/user")
-    end
-
-    it "systemD - root- returns the current relevant path" do
-      ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:root?).and_return(true)
-      allow(described_class).to receive(:launchctl?).and_return(false)
-      allow(described_class).to receive(:systemctl?).and_return(true)
-      expect(services_cli.path.to_s).to eq("/usr/lib/systemd/system")
-    end
-  end
-
   describe "#running" do
     it "macOS - returns the currently running services" do
-      allow(described_class).to receive(:launchctl?).and_return(true)
-      allow(described_class).to receive(:systemctl?).and_return(false)
+      allow(Service::System).to receive(:launchctl?).and_return(true)
+      allow(Service::System).to receive(:systemctl?).and_return(false)
       allow(Utils).to receive(:popen_read).and_return <<~EOS
         77513   50  homebrew.mxcl.php
       EOS
@@ -134,7 +22,7 @@ describe Service::ServicesCli do
     end
 
     it "systemD - returns the currently running services" do
-      allow(described_class).to receive(:launchctl?).and_return(false)
+      allow(Service::System).to receive(:launchctl?).and_return(false)
       allow(Utils).to receive(:popen_read).and_return <<~EOS
         homebrew.php.service     loaded active running Homebrew PHP service
         systemd-udevd.service    loaded active running Rule-based Manager for Device Events and Files
