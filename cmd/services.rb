@@ -71,7 +71,7 @@ module Homebrew
     end
 
     target = if args.all?
-      Service::ServicesCli.available_services
+      Service::Formulae.available_services
     elsif formula
       Service::FormulaWrapper.new(Formulary.factory(formula))
     end
