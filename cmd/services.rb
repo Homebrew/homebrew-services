@@ -51,7 +51,7 @@ module Homebrew
     require_relative "../lib/service"
     require "utils"
 
-    if !Service::ServicesCli.launchctl? && !Service::ServicesCli.systemctl?
+    if !Service::System.launchctl? && !Service::System.systemctl?
       raise UsageError,
             "`brew services` is supported only on macOS or Linux (with systemd)!"
     end
@@ -76,7 +76,7 @@ module Homebrew
       Service::FormulaWrapper.new(Formulary.factory(formula))
     end
 
-    ENV["DBUS_SESSION_BUS_ADDRESS"] = ENV["HOMEBREW_DBUS_SESSION_BUS_ADDRESS"] if Service::ServicesCli.systemctl?
+    ENV["DBUS_SESSION_BUS_ADDRESS"] = ENV["HOMEBREW_DBUS_SESSION_BUS_ADDRESS"] if Service::System.systemctl?
 
     # Dispatch commands and aliases.
     case subcommand.presence

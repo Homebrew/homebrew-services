@@ -11,91 +11,20 @@ module Service
       "brew services"
     end
 
-    # Path to launchctl binary.
-    def launchctl
-      @launchctl ||= which("launchctl")
-    end
-
-    # Is this a launchctl system
-    def launchctl?
-      launchctl.present?
-    end
-
-    # Path to systemctl binary.
-    def systemctl
-      @systemctl ||= which("systemctl")
-    end
-
-    # Is this a systemd system
-    def systemctl?
-      systemctl.present?
-    end
-
-    # Command scope modifier
-    def systemctl_scope
-      "--user" unless root?
-    end
-
-    # Woohoo, we are root dude!
-    def root?
-      Process.uid.zero?
-    end
-
-    # Current user running `[sudo] brew services`.
-    def user
-      @user ||= ENV["USER"].presence || Utils.safe_popen_read("/usr/bin/whoami").chomp
-    end
-
-    def user_of_process(pid)
-      if pid.nil? || pid.zero?
-        user
-      else
-        Utils.safe_popen_read("ps", "-o", "user", "-p", pid.to_s).lines.second&.chomp
-      end
-    end
-
-    # Run at boot.
-    def boot_path
-      if launchctl?
-        Pathname.new("/Library/LaunchDaemons")
-      elsif systemctl?
-        Pathname.new("/usr/lib/systemd/system")
-      end
-    end
-
-    # Run at login.
-    def user_path
-      if launchctl?
-        Pathname.new("#{ENV["HOME"]}/Library/LaunchAgents")
-      elsif systemctl?
-        Pathname.new("#{ENV["HOME"]}/.config/systemd/user")
-      end
-    end
-
-    # If root, return `boot_path`, else return `user_path`.
-    def path
-      root? ? boot_path : user_path
-    end
-
     # Find all currently running services via launchctl list or systemctl list-units.
     def running
-      if launchctl?
+      if System.launchctl?
         # TODO: find replacement for deprecated "list"
-        Utils.popen_read("#{launchctl} list | grep homebrew")
+        Utils.popen_read("#{System.launchctl} list | grep homebrew")
       else
-        Utils.popen_read(systemctl, systemctl_scope, "list-units", "--type=service", "--state=running", "--no-pager",
+        Utils.popen_read(System.systemctl, System.systemctl_scope, "list-units",
+                         "--type=service",
+                         "--state=running",
+                         "--no-pager",
                          "--no-legend")
       end.chomp.split("\n").map do |svc|
         Regexp.last_match(1) if svc =~ /\s?(homebrew\.[a-z.]*)\s?/
       end.compact
-    end
-
-    def domain_target
-      if root?
-        "system"
-      else
-        "gui/#{Process.uid}"
-      end
     end
 
     # Check if formula has been found.
@@ -134,7 +63,7 @@ module Service
 
     def remove_unused_service_files
       cleaned = []
-      Dir["#{path}homebrew.*.{plist,service}"].each do |file|
+      Dir["#{System.path}homebrew.*.{plist,service}"].each do |file|
         next if running.include?(File.basename(file).sub(/\.(plist|service)$/i, ""))
 
         puts "Removing unused service file #{file}"
@@ -192,7 +121,7 @@ module Service
 
         odie "Formula `#{target.name}` is not installed." unless target.installed?
 
-        file ||= if target.service_file.exist? || systemctl? || target.formula.plist.blank?
+        file ||= if target.service_file.exist? || System.systemctl? || target.formula.plist.blank?
           nil
         elsif target.formula.opt_prefix.exist? && (keg = Keg.for target.formula.opt_prefix) && keg.plist_installed?
           service_file = Dir["#{keg}/*#{target.service_file.extname}"].first
@@ -209,7 +138,7 @@ module Service
           puts
         end
 
-        next if take_root_ownership(service).nil? && root?
+        next if take_root_ownership(service).nil? && System.root?
 
         service_load(service, enable: true)
         @service_file = nil
@@ -232,15 +161,15 @@ module Service
 
       Array(target).select(&:loaded?).each do |service|
         puts "Stopping `#{service.name}`... (might take a while)"
-        if systemctl?
-          quiet_system systemctl, systemctl_scope, "stop", service.service_name
+        if System.systemctl?
+          quiet_system System.systemctl, System.systemctl_scope, "stop", service.service_name
           next
         end
 
-        quiet_system launchctl, "bootout", "#{domain_target}/#{service.service_name}"
+        quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
         while $CHILD_STATUS.to_i == 9216 || service.loaded?
           sleep(1)
-          quiet_system launchctl, "bootout", "#{domain_target}/#{service.service_name}"
+          quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
         end
         if service.dest.exist?
           ohai "Successfully stopped `#{service.name}` (label: #{service.service_name})"
@@ -253,19 +182,19 @@ module Service
 
     # Kill a service that has no plist file.
     def kill(service)
-      quiet_system launchctl, "kill", "SIGTERM", "#{domain_target}/#{service.service_name}"
+      quiet_system System.launchctl, "kill", "SIGTERM", "#{domain_target}/#{service.service_name}"
       while service.loaded?
         sleep(5)
         break if service.loaded?
 
-        quiet_system launchctl, "kill", "SIGKILL", "#{domain_target}/#{service.service_name}"
+        quiet_system System.launchctl, "kill", "SIGKILL", "#{domain_target}/#{service.service_name}"
       end
       ohai "Successfully stopped `#{service.name}` via #{service.service_name}"
     end
 
     # protections to avoid users editing root services
     def take_root_ownership(service)
-      return unless root?
+      return unless System.root?
 
       chown "root", "admin", service.dest
       plist_data = service.dest.read
@@ -322,26 +251,26 @@ module Service
     end
 
     def launchctl_load(service, file:, enable:)
-      safe_system launchctl, "enable", "#{domain_target}/#{service.service_name}" if enable
-      safe_system launchctl, "bootstrap", domain_target, file
+      safe_system System.launchctl, "enable", "#{System.domain_target}/#{service.service_name}" if enable
+      safe_system System.launchctl, "bootstrap", System.domain_target, file
     end
 
     def systemd_load(service, enable:)
-      safe_system systemctl, systemctl_scope, "start", service.service_name
-      safe_system systemctl, systemctl_scope, "enable", service.service_name if enable
+      safe_system System.systemctl, System.systemctl_scope, "start", service.service_name
+      safe_system System.systemctl, System.systemctl_scope, "enable", service.service_name if enable
     end
 
     def service_load(service, enable:)
-      if root? && !service.service_startup?
+      if System.root? && !service.service_startup?
         opoo "#{service.name} must be run as non-root to start at user login!"
-      elsif !root? && service.service_startup?
+      elsif !System.root? && service.service_startup?
         opoo "#{service.name} must be run as root to start at system startup!"
       end
 
-      if launchctl?
+      if System.launchctl?
         file = enable ? service.dest : service.service_file
         launchctl_load(service, file: file, enable: enable)
-      elsif systemctl?
+      elsif System.systemctl?
         systemd_load(service, enable: enable)
       end
 
@@ -373,7 +302,7 @@ module Service
 
       chmod 0644, service.dest
 
-      safe_system systemctl, systemctl_scope, "daemon-reload" if systemctl?
+      safe_system System.systemctl, System.systemctl_scope, "daemon-reload" if System.systemctl?
     end
   end
 end
