@@ -5,9 +5,11 @@ module Service
     module Run
       module_function
 
-      def run(target, verbose:)
-        ServicesCli.check(target) &&
-          ServicesCli.run(target, verbose: verbose)
+      TRIGGERS = ["run"].freeze
+
+      def run(targets, verbose:)
+        ServicesCli.check(targets) &&
+          ServicesCli.run(targets, verbose: verbose)
       end
     end
   end

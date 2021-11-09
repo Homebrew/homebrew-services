@@ -35,8 +35,7 @@ module Service
 
         # If we have a file or a user defined, check if the service is running or errored.
         if formula[:user] && formula[:file]
-          formula[:status] =
-            Service::ServicesCli.service_get_operational_status(service)
+          formula[:status] = Service::ServicesCli.service_get_operational_status(service)
         end
 
         formula

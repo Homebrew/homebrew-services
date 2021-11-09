@@ -28,8 +28,9 @@ module Service
     end
 
     # Check if formula has been found.
-    def check(target)
-      odie("Formula(e) missing, please provide a formula name or use --all") unless target
+    def check(targets)
+      raise UsageError, "Formula(e) missing, please provide a formula name or use --all" if targets.empty?
+
       true
     end
 
@@ -74,62 +75,43 @@ module Service
       cleaned
     end
 
-    # Stop if loaded, then start or run again.
-    def restart(target, service_file = nil, verbose: false)
-      Array(target).each do |service|
-        was_run = service.loaded? && !service.service_file_present?
-
-        stop(service) if service.loaded?
-
-        if was_run
-          run(service)
-        else
-          start(service, service_file, verbose: verbose)
-        end
-      end
-    end
-
     # Run a service as defined in the formula. This does not clean the service file like `start` does.
-    def run(target, verbose: false)
-      if target.is_a?(Service)
-        if target.pid?
-          puts "Service `#{target.name}` already running, use `#{bin} restart #{target.name}` to restart."
-          return
-        elsif root?
-          puts "Service `#{target.name}` cannot be run (but can be started) as root."
-          return
+    def run(targets, verbose: false)
+      targets.each do |service|
+        if service.pid?
+          puts "Service `#{service.name}` already running, use `#{bin} restart #{service.name}` to restart."
+          next
+        elsif System.root?
+          puts "Service `#{service.name}` cannot be run (but can be started) as root."
+          next
         end
-      end
 
-      Array(target).each do |service|
         service_load(service, enable: false)
       end
     end
 
     # Start a service.
-    def start(target, service_file = nil, verbose: false)
+    def start(targets, service_file = nil, verbose: false)
       if service_file.present?
         file = Pathname.new service_file
         raise UsageError, "Provided service file does not exist" unless file.exist?
       end
 
-      if target.is_a?(Service)
-        if target.pid?
-          puts "Service `#{target.name}` already started, use `#{bin} restart #{target.name}` to restart."
-          return
+      targets.reject(&:pid?).each do |service|
+        if service.pid?
+          puts "Service `#{service.name}` already started, use `#{bin} restart #{service.name}` to restart."
+          next
         end
 
-        odie "Formula `#{target.name}` is not installed." unless target.installed?
+        odie "Formula `#{service.name}` is not installed." unless service.installed?
 
-        file ||= if target.service_file.exist? || System.systemctl? || target.formula.plist.blank?
+        file ||= if service.service_file.exist? || System.systemctl? || service.formula.plist.blank?
           nil
-        elsif target.formula.opt_prefix.exist? && (keg = Keg.for target.formula.opt_prefix) && keg.plist_installed?
-          service_file = Dir["#{keg}/*#{target.service_file.extname}"].first
+        elsif service.formula.opt_prefix.exist? && (keg = Keg.for service.formula.opt_prefix) && keg.plist_installed?
+          service_file = Dir["#{keg}/*#{service.service_file.extname}"].first
           Pathname.new service_file if service_file.present?
         end
-      end
 
-      Array(target).reject(&:pid?).each do |service|
         install_service_file(service, file)
 
         if file.blank? && verbose
@@ -146,20 +128,21 @@ module Service
     end
 
     # Stop a service, or kill it if no service file is available.
-    def stop(target, verbose: false)
-      if target.is_a?(Service) && !target.loaded?
-        rm target.dest if target.dest.exist? # get rid of installed service file anyway, dude
-        if target.service_file_present?
-          odie <<~EOS
-            Service `#{target.name}` is started as `#{target.owner}`. Try:
-              #{"sudo " unless ServicesCli.root?}#{bin} stop #{target.name}
-          EOS
-        else
-          odie "Service `#{target.name}` is not started."
+    def stop(targets, verbose: false)
+      targets.each do |service|
+        unless service.loaded?
+          rm service.dest if service.dest.exist? # get rid of installed service file anyway, dude
+          if service.service_file_present?
+            odie <<~EOS
+              Service `#{service.name}` is started as `#{service.owner}`. Try:
+                #{"sudo " unless ServicesCli.root?}#{bin} stop #{service.name}
+            EOS
+          else
+            opoo "Service `#{service.name}` is not started."
+          end
+          next
         end
-      end
 
-      Array(target).select(&:loaded?).each do |service|
         puts "Stopping `#{service.name}`... (might take a while)"
         if System.systemctl?
           quiet_system System.systemctl, System.systemctl_scope, "stop", service.service_name
