@@ -18,6 +18,9 @@ module Homebrew
         [`sudo`] `brew services` [`list`]:
         List all managed services for the current user (or root).
 
+        [`sudo`] `brew services info` (<formula>|`--all`):
+        List all managed services for the current user (or root).
+
         [`sudo`] `brew services run` (<formula>|`--all`):
         Run the service <formula> without registering to launch at login (or boot).
 
@@ -35,6 +38,7 @@ module Homebrew
       EOS
       flag "--file=", description: "Use the plist file from this location to start or run the service."
       switch "--all", description: "Run <subcommand> on all services."
+      switch "--json", description: "Output as JSON."
     end
   end
 
@@ -86,6 +90,8 @@ module Homebrew
       Service::Commands::List.run
     when *Service::Commands::Cleanup::TRIGGERS
       Service::Commands::Cleanup.run
+    when *Service::Commands::Info::TRIGGERS
+      Service::Commands::Info.run(targets, verbose: args.verbose?, json: args.json?)
     when *Service::Commands::Restart::TRIGGERS
       Service::Commands::Restart.run(targets, custom_plist, verbose: args.verbose?)
     when *Service::Commands::Run::TRIGGERS

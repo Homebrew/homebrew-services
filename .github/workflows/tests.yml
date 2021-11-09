@@ -121,3 +121,9 @@ jobs:
     - name: Test list command
       run: |
         brew services | grep redis
+
+    - name: Test info command
+      run: |
+        brew services info redis | grep redis
+        brew services info redis --verbose | grep redis
+        brew services info redis --json | ruby -e "require 'json'" -e "puts JSON.parse(ARGF.read)"

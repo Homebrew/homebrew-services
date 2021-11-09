@@ -34,17 +34,6 @@ module Service
       true
     end
 
-    def service_get_operational_status(service)
-      if service.pid?
-        :started
-      elsif service.error?
-        puts service.exit_code
-        :error
-      elsif service.unknown_status?
-        :unknown
-      end
-    end
-
     # Kill services that don't have a service file
     def kill_orphaned_services
       cleaned = []
