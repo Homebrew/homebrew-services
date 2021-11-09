@@ -5,9 +5,11 @@ module Service
     module Start
       module_function
 
-      def run(target, custom_plist, verbose:)
-        ServicesCli.check(target) &&
-          ServicesCli.start(target, custom_plist, verbose: verbose)
+      TRIGGERS = %w[start launch load s l].freeze
+
+      def run(targets, custom_plist, verbose:)
+        ServicesCli.check(targets) &&
+          ServicesCli.start(targets, custom_plist, verbose: verbose)
       end
     end
   end

@@ -5,6 +5,8 @@ module Service
     module Cleanup
       module_function
 
+      TRIGGERS = %w[cleanup clean cl rm].freeze
+
       def run
         cleaned = []
 

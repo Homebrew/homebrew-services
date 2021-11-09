@@ -65,33 +65,35 @@ module Homebrew
       custom_plist = args.file
     end
 
-    if ["list", "cleanup"].include?(subcommand)
+    if [*Service::Commands::List::TRIGGERS, *Service::Commands::Cleanup::TRIGGERS].include?(subcommand)
       raise UsageError, "The `#{subcommand}` subcommand does not accept a formula argument!" if formula
       raise UsageError, "The `#{subcommand}` subcommand does not accept the --all argument!" if args.all?
     end
 
-    target = if args.all?
+    targets = if args.all?
       Service::Formulae.available_services
     elsif formula
-      Service::FormulaWrapper.new(Formulary.factory(formula))
+      [Service::FormulaWrapper.new(Formulary.factory(formula))]
+    else
+      []
     end
 
     ENV["DBUS_SESSION_BUS_ADDRESS"] = ENV["HOMEBREW_DBUS_SESSION_BUS_ADDRESS"] if Service::System.systemctl?
 
     # Dispatch commands and aliases.
     case subcommand.presence
-    when nil, "list", "ls"
+    when *Service::Commands::List::TRIGGERS
       Service::Commands::List.run
-    when "cleanup", "clean", "cl", "rm"
+    when *Service::Commands::Cleanup::TRIGGERS
       Service::Commands::Cleanup.run
-    when "restart", "relaunch", "reload", "r"
-      Service::Commands::Restart.run(target, custom_plist, verbose: args.verbose?)
-    when "run"
-      Service::Commands::Run.run(target, verbose: args.verbose?)
-    when "start", "launch", "load", "s", "l"
-      Service::Commands::Start.run(target, custom_plist, verbose: args.verbose?)
-    when "stop", "unload", "terminate", "term", "t", "u"
-      Service::Commands::Stop.run(target, verbose: args.verbose?)
+    when *Service::Commands::Restart::TRIGGERS
+      Service::Commands::Restart.run(targets, custom_plist, verbose: args.verbose?)
+    when *Service::Commands::Run::TRIGGERS
+      Service::Commands::Run.run(targets, verbose: args.verbose?)
+    when *Service::Commands::Start::TRIGGERS
+      Service::Commands::Start.run(targets, custom_plist, verbose: args.verbose?)
+    when *Service::Commands::Stop::TRIGGERS
+      Service::Commands::Stop.run(targets, verbose: args.verbose?)
     else
       raise UsageError, "unknown subcommand: `#{subcommand}`"
     end

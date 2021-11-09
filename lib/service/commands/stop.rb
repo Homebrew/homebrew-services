@@ -5,9 +5,11 @@ module Service
     module Stop
       module_function
 
-      def run(target, verbose:)
-        ServicesCli.check(target) &&
-          ServicesCli.stop(target, verbose: verbose)
+      TRIGGERS = %w[stop unload terminate term t u].freeze
+
+      def run(targets, verbose:)
+        ServicesCli.check(targets) &&
+          ServicesCli.stop(targets, verbose: verbose)
       end
     end
   end

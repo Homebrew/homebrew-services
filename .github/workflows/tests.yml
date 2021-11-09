@@ -62,6 +62,7 @@ jobs:
       run: |
         brew services stop redis
         sleep 5
+        brew services run redis
         brew services restart redis
         brew services list | grep redis
         sleep 5

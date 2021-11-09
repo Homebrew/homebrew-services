@@ -205,7 +205,7 @@ describe Service::FormulaWrapper do
       allow(Service::System).to receive(:systemctl?).and_return(false)
       expect do
         service.generate_plist(nil)
-      end.to output("Could not read the plist for `mysql`!\n").to_stdout
+      end.to raise_error TestExit, "Could not read the plist for `mysql`!"
     end
   end
 end

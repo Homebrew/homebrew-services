@@ -66,6 +66,14 @@ module Service
     end
 
     def odie(string)
+      raise TestExit, string
+    end
+
+    def opoo(string)
+      puts string
+    end
+
+    def ohai(string)
       puts string
     end
   end
@@ -76,7 +84,7 @@ module Service
     end
 
     def odie(string)
-      puts string
+      raise TestExit, string
     end
   end
 end

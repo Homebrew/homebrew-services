@@ -5,9 +5,24 @@ module Service
     module Restart
       module_function
 
-      def run(target, custom_plist, verbose:)
-        ServicesCli.check(target) &&
-          ServicesCli.restart(target, custom_plist, verbose: verbose)
+      TRIGGERS = %w[restart relaunch reload r].freeze
+
+      def run(targets, _custom_plist, verbose:)
+        return unless ServicesCli.check(targets)
+
+        ran = []
+        started = []
+        targets.select(&:loaded?).each do |service|
+          if service.service_file_present?
+            started << service
+          else
+            ran << service
+          end
+          ServicesCli.stop([service]) if service.loaded?
+        end
+
+        ServicesCli.run(ran) unless ran.empty?
+        ServicesCli.start(started) unless started.empty?
       end
     end
   end

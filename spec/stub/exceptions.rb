@@ -2,3 +2,6 @@
 
 class UsageError < RuntimeError
 end
+
+class TestExit < RuntimeError
+end

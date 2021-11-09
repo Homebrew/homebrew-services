@@ -7,6 +7,8 @@ module Service
     module List
       module_function
 
+      TRIGGERS = [nil, "list", "ls"].freeze
+
       def run
         formulae = Formulae.services_list
         if formulae.empty?
