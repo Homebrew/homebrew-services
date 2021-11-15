@@ -12,7 +12,7 @@ module Service
 
         ran = []
         started = []
-        targets.select(&:loaded?).each do |service|
+        targets.each do |service|
           if service.service_file_present?
             started << service
           else
