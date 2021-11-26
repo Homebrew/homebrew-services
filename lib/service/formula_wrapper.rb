@@ -83,6 +83,7 @@ module Service
         # TODO: find replacement for deprecated "list"
         quiet_system System.launchctl, "list", service_name
       elsif System.systemctl?
+        ENV['XDG_RUNTIME_DIR'] = ENV['XDG_RUNTIME_DIR'] || "/run/user/" + Process.uid.to_s  
         quiet_system System.systemctl, System.systemctl_scope, "list-unit-files", service_file.basename
       end
     end
@@ -159,6 +160,7 @@ module Service
       @status ||= if System.launchctl?
         Utils.popen_read(System.launchctl, "list", service_name).chomp
       elsif System.systemctl?
+        ENV['XDG_RUNTIME_DIR'] = ENV['XDG_RUNTIME_DIR'] || "/run/user/" + Process.uid.to_s     
         Utils.popen_read(System.systemctl.to_s, System.systemctl_scope.to_s, "status",
                          service_name.to_s).chomp
       end

@@ -17,6 +17,7 @@ module Service
         # TODO: find replacement for deprecated "list"
         Utils.popen_read("#{System.launchctl} list | grep homebrew")
       else
+        ENV['XDG_RUNTIME_DIR'] = ENV['XDG_RUNTIME_DIR'] || "/run/user/" + Process.uid.to_s  
         Utils.popen_read(System.systemctl, System.systemctl_scope, "list-units",
                          "--type=service",
                          "--state=running",
@@ -96,13 +97,11 @@ module Service
         file = Pathname.new service_file
         raise UsageError, "Provided service file does not exist" unless file.exist?
       end
-
       targets.reject(&:pid?).each do |service|
         if service.pid?
           puts "Service `#{service.name}` already started, use `#{bin} restart #{service.name}` to restart."
           next
         end
-
         odie "Formula `#{service.name}` is not installed." unless service.installed?
 
         file ||= if service.service_file.exist? || System.systemctl? || service.formula.plist.blank?
@@ -111,7 +110,6 @@ module Service
           service_file = Dir["#{keg}/*#{service.service_file.extname}"].first
           Pathname.new service_file if service_file.present?
         end
-
         install_service_file(service, file)
 
         if file.blank? && verbose
@@ -145,6 +143,7 @@ module Service
 
         puts "Stopping `#{service.name}`... (might take a while)"
         if System.systemctl?
+          ENV['XDG_RUNTIME_DIR'] = ENV['XDG_RUNTIME_DIR'] || "/run/user/" + Process.uid.to_s  
           quiet_system System.systemctl, System.systemctl_scope, "stop", service.service_name
           next
         end
@@ -239,6 +238,7 @@ module Service
     end
 
     def systemd_load(service, enable:)
+      ENV['XDG_RUNTIME_DIR'] = ENV['XDG_RUNTIME_DIR'] || "/run/user/" + Process.uid.to_s  
       safe_system System.systemctl, System.systemctl_scope, "start", service.service_name
       safe_system System.systemctl, System.systemctl_scope, "enable", service.service_name if enable
     end
@@ -285,6 +285,7 @@ module Service
 
       chmod 0644, service.dest
 
+      ENV['XDG_RUNTIME_DIR'] = ENV['XDG_RUNTIME_DIR'] || "/run/user/" + Process.uid.to_s
       safe_system System.systemctl, System.systemctl_scope, "daemon-reload" if System.systemctl?
     end
   end
