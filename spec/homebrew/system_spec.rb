@@ -21,6 +21,18 @@ describe Service::System do
     end
   end
 
+  describe "#systemctl_scope" do
+    it "outputs systemctl scope for user" do
+      allow(described_class).to receive(:root?).and_return(false)
+      expect(described_class.systemctl_scope).to eq("--user")
+    end
+
+    it "outputs systemctl scope for root" do
+      allow(described_class).to receive(:root?).and_return(true)
+      expect(described_class.systemctl_scope).to eq(nil)
+    end
+  end
+
   describe "#systemctl" do
     it "outputs systemctl command location" do
       expect(described_class.systemctl).to eq("/bin/systemctl")
@@ -51,6 +63,13 @@ describe Service::System do
       EOS
       expect(described_class.user_of_process(50)).to eq("user")
     end
+
+    it "returns nil if unavailable" do
+      allow(Utils).to receive(:safe_popen_read).and_return <<~EOS
+        USER
+      EOS
+      expect(described_class.user_of_process(50)).to eq(nil)
+    end
   end
 
   describe "#domain_target" do
@@ -66,8 +85,21 @@ describe Service::System do
   end
 
   describe "#boot_path" do
-    it "returns the boot path" do
+    it "macOS - returns the boot path" do
+      allow(described_class).to receive(:launchctl?).and_return(true)
       expect(described_class.boot_path.to_s).to eq("/Library/LaunchDaemons")
+    end
+
+    it "SystemD - returns the boot path" do
+      allow(described_class).to receive(:launchctl?).and_return(false)
+      allow(described_class).to receive(:systemctl?).and_return(true)
+      expect(described_class.boot_path.to_s).to eq("/usr/lib/systemd/system")
+    end
+
+    it "Unknown - returns no boot path" do
+      allow(described_class).to receive(:launchctl?).and_return(false)
+      allow(described_class).to receive(:systemctl?).and_return(false)
+      expect(described_class.boot_path.to_s).to eq("")
     end
   end
 
@@ -84,6 +116,13 @@ describe Service::System do
       allow(described_class).to receive(:launchctl?).and_return(false)
       allow(described_class).to receive(:systemctl?).and_return(true)
       expect(described_class.user_path.to_s).to eq("/tmp_home/.config/systemd/user")
+    end
+
+    it "Unknown - returns no user path" do
+      ENV["HOME"] = "/tmp_home"
+      allow(described_class).to receive(:launchctl?).and_return(false)
+      allow(described_class).to receive(:systemctl?).and_return(false)
+      expect(described_class.user_path.to_s).to eq("")
     end
   end
 

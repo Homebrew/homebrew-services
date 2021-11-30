@@ -30,7 +30,7 @@ module Service
 
         formulae.each do |formula|
           status = get_status_string(formula[:status])
-          file  = formula[:file]&.to_s&.sub! ENV["HOME"], "~"
+          file   = formula[:file]&.to_s&.gsub ENV["HOME"], "~"
 
           row = "%-#{longest_name}.#{longest_name}<name>s %<status>s " \
                 "%-#{longest_user}.#{longest_user}<user>s %<file>s"
