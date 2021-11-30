@@ -5,7 +5,7 @@ require "spec_helper"
 describe Service::Commands::Restart do
   describe "#TRIGGERS" do
     it "contains all restart triggers" do
-      expect(Service::Commands::Restart::TRIGGERS).to eq(%w[restart relaunch reload r])
+      expect(described_class::TRIGGERS).to eq(%w[restart relaunch reload r])
     end
   end
 

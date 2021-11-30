@@ -10,10 +10,10 @@ module Service
       def run
         cleaned = []
 
-        cleaned << ServicesCli.kill_orphaned_services
-        cleaned << ServicesCli.remove_unused_service_files
+        cleaned += ServicesCli.kill_orphaned_services
+        cleaned += ServicesCli.remove_unused_service_files
 
-        puts "All #{root? ? "root" : "user-space"} services OK, nothing cleaned..." if cleaned.empty?
+        puts "All #{System.root? ? "root" : "user-space"} services OK, nothing cleaned..." if cleaned.empty?
       end
     end
   end

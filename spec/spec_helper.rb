@@ -34,6 +34,30 @@ RSpec.configure do |config|
   end
 end
 
+module Tty
+  module_function
+
+  def green
+    "<GREEN>"
+  end
+
+  def yellow
+    "<YELLOW>"
+  end
+
+  def red
+    "<RED>"
+  end
+
+  def bold
+    "<BOLD>"
+  end
+
+  def reset
+    "<RESET>"
+  end
+end
+
 module Utils
   module_function
 
@@ -86,6 +110,16 @@ module Service
 
     def odie(string)
       raise TestExit, string
+    end
+  end
+
+  module Commands
+    module List
+      module_function
+
+      def opoo(string)
+        puts string
+      end
     end
   end
 end

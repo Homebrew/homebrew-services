@@ -16,7 +16,7 @@ module Service
     def services_list
       available_services.map do |service|
         formula = {
-          name:   service.formula.name,
+          name:   service.name,
           status: :stopped,
           user:   nil,
           file:   nil,
@@ -34,9 +34,7 @@ module Service
         end
 
         # If we have a file or a user defined, check if the service is running or errored.
-        if formula[:user] && formula[:file]
-          formula[:status] = Service::ServicesCli.service_get_operational_status(service)
-        end
+        formula[:status] = ServicesCli.service_get_operational_status(service) if formula[:user] && formula[:file]
 
         formula
       end
