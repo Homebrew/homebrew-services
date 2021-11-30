@@ -2,7 +2,8 @@
 
 require "simplecov"
 SimpleCov.start do
-  add_filter "/vendor/"
+  enable_coverage :branch
+  add_filter(/vendor|spec/)
   minimum_coverage 20
 end
 
