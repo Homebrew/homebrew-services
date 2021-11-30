@@ -13,10 +13,11 @@ module Service
         ran = []
         started = []
         targets.each do |service|
-          if service.service_file_present?
-            started << service
-          else
+          if service.loaded? && !service.service_file_present?
             ran << service
+          else
+            # group not-started services with started ones for restart
+            started << service
           end
           ServicesCli.stop([service]) if service.loaded?
         end
