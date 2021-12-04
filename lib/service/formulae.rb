@@ -14,30 +14,7 @@ module Service
 
     # List all available services with status, user, and path to the file.
     def services_list
-      available_services.map do |service|
-        formula = {
-          name:   service.name,
-          status: :stopped,
-          user:   nil,
-          file:   nil,
-        }
-
-        if service.service_file_present?(for: :root) && service.pid?
-          formula[:user] = "root"
-          formula[:file] = System.boot_path + service.service_file.basename
-        elsif service.service_file_present?(for: :user) && service.pid?
-          formula[:user] = System.user_of_process(service.pid)
-          formula[:file] = System.user_path + service.service_file.basename
-        elsif service.loaded?
-          formula[:user] = System.user
-          formula[:file] = service.service_file
-        end
-
-        # If we have a file or a user defined, check if the service is running or errored.
-        formula[:status] = ServicesCli.service_get_operational_status(service) if formula[:user] && formula[:file]
-
-        formula
-      end
+      available_services.map(&:to_hash)
     end
   end
 end

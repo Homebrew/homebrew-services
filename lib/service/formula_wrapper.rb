@@ -28,6 +28,20 @@ module Service
       @name ||= formula.name
     end
 
+    # Delegate access to `formula.service?`.
+    def service?
+      @service ||= @formula.service?
+    end
+
+    # Delegate access to `formula.service.timed?`.
+    def timed?
+      return unless @formula.service?
+
+      require_relative "../../../../../Homebrew/service"
+
+      @timed ||= formula.service.timed?
+    end
+
     # service_name delegates with formula.plist_name or formula.service_name for systemd (e.g., `homebrew.<formula>`).
     def service_name
       @service_name ||= if System.launchctl?
@@ -101,7 +115,7 @@ module Service
 
     def owner
       return "root" if boot_path_service_file_present?
-      return ENV["USER"] if user_path_service_file_present?
+      return System.user if user_path_service_file_present?
 
       nil
     end
@@ -153,7 +167,55 @@ module Service
       data
     end
 
+    def to_hash
+      hash = {
+        name:         name,
+        service_name: service_name,
+        running:      pid?,
+        loaded:       loaded?,
+        schedulable:  timed?,
+        pid:          pid,
+        exit_code:    exit_code,
+        user:         owner,
+        status:       operational_status,
+        file:         service_file_present? ? dest : service_file,
+      }
+
+      return hash unless service?
+
+      service = formula.service
+      hash[:command] = service.manual_command
+      hash[:working_dir] = service.working_dir
+      hash[:root_dir] = service.root_dir
+      hash[:log_path] = service.log_path
+      hash[:error_log_path] = service.error_log_path
+      hash[:interval] = service.interval
+      hash[:cron] = service.cron
+
+      hash
+    end
+
     private
+
+    def operational_status
+      if pid?
+        :started
+      elsif !loaded?
+        :none
+      elsif exit_code.zero?
+        if timed?
+          :scheduled
+        else
+          :stopped
+        end
+      elsif error?
+        :error
+      elsif unknown_status?
+        :unknown
+      else
+        :other
+      end
+    end
 
     def status
       @status ||= if System.launchctl?
