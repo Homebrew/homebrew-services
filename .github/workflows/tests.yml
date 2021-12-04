@@ -4,18 +4,29 @@ on:
     branches: master
   pull_request:
 jobs:
-  tests:
-    name: Tests (${{ matrix.os }})
+  tap_syntax:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/homebrew/ubuntu16.04:master
+    env:
+      HOMEBREW_SIMULATE_MACOS_ON_LINUX: 1
+    steps:
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - run: brew test-bot --only-tap-syntax
+  rspec_tests:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Enable linger
+    - name: Set up Ruby
       if: matrix.os == 'ubuntu-latest'
-      run: |
-        loginctl enable-linger $(whoami)
-        echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> $GITHUB_ENV
+      uses: ruby/setup-ruby@master
+      with:
+        ruby-version: '2.6'
 
     - name: Set up Homebrew
       id: set-up-homebrew
@@ -33,14 +44,6 @@ jobs:
       if: steps.cache.outputs.cache-hit != 'true'
       run: brew install-bundler-gems
 
-    - run: brew test-bot --only-tap-syntax
-
-    - name: Set up Ruby
-      if: matrix.os == 'ubuntu-latest'
-      uses: ruby/setup-ruby@master
-      with:
-        ruby-version: '2.6'
-
     - name: Install Bundler
       run: gem install bundler -v "~>1"
 
@@ -49,6 +52,40 @@ jobs:
 
     - name: Run Homebrew/homebrew-services RSpec tests
       run: bundle exec rspec
+
+  functional_tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Enable linger
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        loginctl enable-linger $(whoami)
+        echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> $GITHUB_ENV
+
+    - name: Set up Ruby
+      if: matrix.os == 'ubuntu-latest'
+      uses: ruby/setup-ruby@master
+      with:
+        ruby-version: '2.6'
+
+    - name: Set up Homebrew
+      id: set-up-homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+
+    - name: Cache Homebrew Bundler RubyGems
+      id: cache
+      uses: actions/cache@v2.1.7
+      with:
+        path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+        key: ${{ runner.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+        restore-keys: ${{ runner.os }}-rubygems-
+
+    - name: Install Homebrew Bundler RubyGems
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: brew install-bundler-gems
 
     - name: Test start command
       run: |
@@ -80,3 +117,7 @@ jobs:
         sleep 5
         redis-cli INFO | grep uptime_in_seconds
         brew services stop redis
+
+    - name: Test list command
+      run: |
+        brew services | grep redis
