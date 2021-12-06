@@ -39,7 +39,10 @@ module Service
 
       require_relative "../../../../../Homebrew/service"
 
-      @timed ||= formula.service.timed?
+      @timed ||= begin
+        return nil unless formula.service.respond_to?(:timed?)
+        formula.service.timed?
+      end
     end
 
     # service_name delegates with formula.plist_name or formula.service_name for systemd (e.g., `homebrew.<formula>`).
@@ -173,7 +176,7 @@ module Service
         service_name: service_name,
         running:      pid?,
         loaded:       loaded?,
-        schedulable:  nil,
+        schedulable:  timed?,
         pid:          pid,
         exit_code:    exit_code,
         user:         owner,
