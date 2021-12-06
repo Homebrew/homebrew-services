@@ -31,7 +31,7 @@ module Service
         formulae.each do |formula|
           status = get_status_string(formula[:status])
           status += formula[:exit_code].to_s if formula[:status] == :error
-          file   = formula[:file]&.to_s&.gsub ENV["HOME"], "~" if formula[:loaded]
+          file    = formula[:file].to_s.gsub(ENV["HOME"], "~").presence if formula[:loaded]
 
           row = "%-#{longest_name}.#{longest_name}<name>s %<status>s " \
                 "%-#{longest_user}.#{longest_user}<user>s %<file>s"
