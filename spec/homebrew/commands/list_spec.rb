@@ -19,7 +19,7 @@ describe Service::Commands::List do
 
     it "succeeds with list" do
       out = "<BOLD>Name    Status  User File<RESET>\nservice <GREEN>started<RESET> user /dev/null\n"
-      formula = OpenStruct.new(name: "service", user: "user", status: :started, file: +"/dev/null")
+      formula = OpenStruct.new(name: "service", user: "user", status: :started, file: +"/dev/null", loaded: true)
       expect(Service::Formulae).to receive(:services_list).and_return([formula])
       expect do
         described_class.run
@@ -32,22 +32,22 @@ describe Service::Commands::List do
       formula = { name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :stopped }
       expect do
         described_class.print_table([formula])
-      end.to output("<BOLD>Name Status  User File<RESET>\na    stopped u    /tmp/file.file\n").to_stdout
+      end.to output("<BOLD>Name Status  User File<RESET>\na    stopped u    \n").to_stdout
     end
 
     it "prints without user or file data" do
-      formula = { name: "a", user: nil, file: nil, status: :stopped }
+      formula = { name: "a", user: nil, file: nil, status: :started, loaded: true }
       expect do
         described_class.print_table([formula])
-      end.to output("<BOLD>Name Status  User File<RESET>\na    stopped      \n").to_stdout
+      end.to output("<BOLD>Name Status  User File<RESET>\na    <GREEN>started<RESET>      \n").to_stdout
     end
 
     it "prints shortened home directory" do
       ENV["HOME"] = "/tmp"
-      formula = { name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :stopped }
+      formula = { name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :started, loaded: true }
       expect do
         described_class.print_table([formula])
-      end.to output("<BOLD>Name Status  User File<RESET>\na    stopped u    ~/file.file\n").to_stdout
+      end.to output("<BOLD>Name Status  User File<RESET>\na    <GREEN>started<RESET> u    ~/file.file\n").to_stdout
     end
   end
 

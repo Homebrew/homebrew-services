@@ -30,7 +30,8 @@ module Service
 
         formulae.each do |formula|
           status = get_status_string(formula[:status])
-          file   = formula[:file]&.to_s&.gsub ENV["HOME"], "~"
+          status += formula[:exit_code].to_s if formula[:status] == :error
+          file    = formula[:file].to_s.gsub(ENV["HOME"], "~").presence if formula[:loaded]
 
           row = "%-#{longest_name}.#{longest_name}<name>s %<status>s " \
                 "%-#{longest_user}.#{longest_user}<user>s %<file>s"
@@ -42,8 +43,8 @@ module Service
       # @private
       def get_status_string(status)
         case status
-        when :started then "#{Tty.green}started#{Tty.reset}"
-        when :stopped then "stopped"
+        when :started, :scheduled then "#{Tty.green}#{status}#{Tty.reset}"
+        when :stopped, :none then status.to_s
         when :error   then "#{Tty.red}error  #{Tty.reset}"
         when :unknown then "#{Tty.yellow}unknown#{Tty.reset}"
         end
