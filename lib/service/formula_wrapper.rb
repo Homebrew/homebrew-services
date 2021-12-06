@@ -173,7 +173,7 @@ module Service
         service_name: service_name,
         running:      pid?,
         loaded:       loaded?,
-        schedulable:  timed?,
+        schedulable:  nil,
         pid:          pid,
         exit_code:    exit_code,
         user:         owner,
