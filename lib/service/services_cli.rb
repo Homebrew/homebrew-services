@@ -165,12 +165,12 @@ module Service
 
     # Kill a service that has no plist file.
     def kill(service)
-      quiet_system System.launchctl, "kill", "SIGTERM", "#{domain_target}/#{service.service_name}"
+      quiet_system System.launchctl, "kill", "SIGTERM", "#{System.domain_target}/#{service.service_name}"
       while service.loaded?
         sleep(5)
         break if service.loaded?
 
-        quiet_system System.launchctl, "kill", "SIGKILL", "#{domain_target}/#{service.service_name}"
+        quiet_system System.launchctl, "kill", "SIGKILL", "#{System.domain_target}/#{service.service_name}"
       end
       ohai "Successfully stopped `#{service.name}` via #{service.service_name}"
     end
