@@ -34,6 +34,18 @@ RSpec.configure do |config|
   end
 end
 
+module Formatter
+  module_function
+
+  def success(string)
+    string
+  end
+
+  def error(string)
+    string
+  end
+end
+
 module Tty
   module_function
 
@@ -55,6 +67,16 @@ module Tty
 
   def reset
     "<RESET>"
+  end
+end
+
+module Homebrew
+  module EnvConfig
+    module_function
+
+    def no_emoji?
+      false
+    end
   end
 end
 

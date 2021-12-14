@@ -182,45 +182,4 @@ describe Service::ServicesCli do
       end.to output("Successfully started `name` (label: service.name)\n").to_stdout
     end
   end
-
-  describe "#service_get_operational_status" do
-    it "checks unknown_status" do
-      service = OpenStruct.new(
-        pid?:            false,
-        error?:          false,
-        unknown_status?: true,
-      )
-      expect(services_cli.service_get_operational_status(service)).to eq(:unknown)
-    end
-
-    it "checks error" do
-      service = OpenStruct.new(
-        pid?:            false,
-        error?:          true,
-        unknown_status?: false,
-      )
-      expect(services_cli.service_get_operational_status(service)).to eq(:error)
-    end
-
-    it "checks error output" do
-      service = OpenStruct.new(
-        pid?:            false,
-        error?:          true,
-        unknown_status?: false,
-        exit_code:       40,
-      )
-      expect do
-        services_cli.service_get_operational_status(service)
-      end.to output("40\n").to_stdout
-    end
-
-    it "checks started" do
-      service = OpenStruct.new(
-        pid?:            true,
-        error?:          false,
-        unknown_status?: false,
-      )
-      expect(services_cli.service_get_operational_status(service)).to eq(:started)
-    end
-  end
 end
