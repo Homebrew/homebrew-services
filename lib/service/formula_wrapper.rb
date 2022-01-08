@@ -202,7 +202,7 @@ module Service
         :started
       elsif !loaded?
         :none
-      elsif exit_code.zero?
+      elsif exit_code.present? && exit_code.zero?
         if timed?
           :scheduled
         else
