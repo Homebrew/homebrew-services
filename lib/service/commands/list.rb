@@ -21,21 +21,30 @@ module Service
       # Print the table in the CLI
       # @private
       def print_table(formulae)
-        longest_name = [formulae.max_by { |formula| formula[:name].length }[:name].length, 4].max
-        longest_user = [formulae.map { |formula| formula[:user].nil? ? 4 : formula[:user].length }.max, 4].max
-
-        headers = "#{Tty.bold}%-#{longest_name}.#{longest_name}<name>s %-7.7<status>s " \
-                  "%-#{longest_user}.#{longest_user}<user>s %<file>s#{Tty.reset}"
-        puts format(headers, name: "Name", status: "Status", user: "User", file: "File")
-
-        formulae.each do |formula|
+        services = formulae.map do |formula|
           status = get_status_string(formula[:status])
           status += formula[:exit_code].to_s if formula[:status] == :error
           file    = formula[:file].to_s.gsub(ENV["HOME"], "~").presence if formula[:loaded]
 
-          row = "%-#{longest_name}.#{longest_name}<name>s %<status>s " \
-                "%-#{longest_user}.#{longest_user}<user>s %<file>s"
-          puts format(row, name: formula[:name], status: status, user: formula[:user], file: file)
+          { name: formula[:name], status: status, user: formula[:user], file: file }
+        end
+
+        longest_name = [*services.map { |service| service[:name].length }, 4].max
+        longest_status = [*services.map { |service| service[:status].length }, 15].max
+        longest_user = [*services.map { |service| service[:user]&.length }, 4].compact.max
+
+        # `longest_status` includes 9 color characters from `Tty.color` and `Tty.reset`.
+        # We don't have these in the header row, so we don't need to add the extra padding.
+        headers = "#{Tty.bold}%-#{longest_name}.#{longest_name}<name>s " \
+                  "%-#{longest_status - 9}.#{longest_status - 9}<status>s " \
+                  "%-#{longest_user}.#{longest_user}<user>s %<file>s#{Tty.reset}"
+        row = "%-#{longest_name}.#{longest_name}<name>s " \
+              "%-#{longest_status}.#{longest_status}<status>s " \
+              "%-#{longest_user}.#{longest_user}<user>s %<file>s"
+
+        puts format(headers, name: "Name", status: "Status", user: "User", file: "File")
+        services.each do |service|
+          puts format(row, **service)
         end
       end
 
@@ -44,7 +53,7 @@ module Service
       def get_status_string(status)
         case status
         when :started, :scheduled then "#{Tty.green}#{status}#{Tty.reset}"
-        when :stopped, :none then status.to_s
+        when :stopped, :none then "#{Tty.default}#{status}#{Tty.reset}"
         when :error   then "#{Tty.red}error  #{Tty.reset}"
         when :unknown then "#{Tty.yellow}unknown#{Tty.reset}"
         end
