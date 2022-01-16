@@ -61,6 +61,10 @@ module Tty
     "<RED>"
   end
 
+  def default
+    "<DEFAULT>"
+  end
+
   def bold
     "<BOLD>"
   end

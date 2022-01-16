@@ -18,7 +18,7 @@ describe Service::Commands::List do
     end
 
     it "succeeds with list" do
-      out = "<BOLD>Name    Status  User File<RESET>\nservice <GREEN>started<RESET> user /dev/null\n"
+      out = "<BOLD>Name    Status       User File<RESET>\nservice <GREEN>started<RESET> user /dev/null\n"
       formula = OpenStruct.new(name: "service", user: "user", status: :started, file: +"/dev/null", loaded: true)
       expect(Service::Formulae).to receive(:services_list).and_return([formula])
       expect do
@@ -32,14 +32,14 @@ describe Service::Commands::List do
       formula = { name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :stopped }
       expect do
         described_class.print_table([formula])
-      end.to output("<BOLD>Name Status  User File<RESET>\na    stopped u    \n").to_stdout
+      end.to output("<BOLD>Name Status         User File<RESET>\na    <DEFAULT>stopped<RESET> u    \n").to_stdout
     end
 
     it "prints without user or file data" do
       formula = { name: "a", user: nil, file: nil, status: :started, loaded: true }
       expect do
         described_class.print_table([formula])
-      end.to output("<BOLD>Name Status  User File<RESET>\na    <GREEN>started<RESET>      \n").to_stdout
+      end.to output("<BOLD>Name Status       User File<RESET>\na    <GREEN>started<RESET>      \n").to_stdout
     end
 
     it "prints shortened home directory" do
@@ -47,7 +47,16 @@ describe Service::Commands::List do
       formula = { name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :started, loaded: true }
       expect do
         described_class.print_table([formula])
-      end.to output("<BOLD>Name Status  User File<RESET>\na    <GREEN>started<RESET> u    ~/file.file\n").to_stdout
+      end.to output("<BOLD>Name Status       User File<RESET>\na    <GREEN>started<RESET> u    ~/file.file\n").to_stdout
+    end
+
+    it "prints an error code" do
+      file = Pathname.new("/tmp/file.file")
+      formula = { name: "a", user: "u", file: file, status: :error, exit_code: 256, loaded: true }
+      expected_output = "<BOLD>Name Status        User File<RESET>\na    <RED>error  <RESET>256 u    /tmp/file.file\n"
+      expect do
+        described_class.print_table([formula])
+      end.to output(expected_output).to_stdout
     end
   end
 
@@ -57,7 +66,7 @@ describe Service::Commands::List do
     end
 
     it "returns stopped" do
-      expect(described_class.get_status_string(:stopped)).to eq("stopped")
+      expect(described_class.get_status_string(:stopped)).to eq("<DEFAULT>stopped<RESET>")
     end
 
     it "returns error" do
