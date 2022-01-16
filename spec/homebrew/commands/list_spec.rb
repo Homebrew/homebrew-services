@@ -45,9 +45,10 @@ describe Service::Commands::List do
     it "prints shortened home directory" do
       ENV["HOME"] = "/tmp"
       formula = { name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :started, loaded: true }
+      expected_output = "<BOLD>Name Status       User File<RESET>\na    <GREEN>started<RESET> u    ~/file.file\n"
       expect do
         described_class.print_table([formula])
-      end.to output("<BOLD>Name Status       User File<RESET>\na    <GREEN>started<RESET> u    ~/file.file\n").to_stdout
+      end.to output(expected_output).to_stdout
     end
 
     it "prints an error code" do
