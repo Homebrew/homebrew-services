@@ -36,7 +36,7 @@ module Homebrew
         [`sudo`] `brew services cleanup`:
         Remove all unused services.
       EOS
-      flag "--file=", description: "Use the plist file from this location to start or run the service."
+      flag "--file=", description: "Use the plist file from this location to `start` or `run` the service."
       switch "--all", description: "Run <subcommand> on all services."
       switch "--json", description: "Output as JSON."
     end
