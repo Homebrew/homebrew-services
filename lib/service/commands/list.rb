@@ -11,8 +11,8 @@ module Service
 
       def run
         formulae = Formulae.services_list
-        if formulae.empty?
-          opoo("No services available to control with `#{Service::ServicesCli.bin}`")
+        if formulae.blank?
+          opoo "No services available to control with `#{Service::ServicesCli.bin}`" if $stderr.tty?
           return
         end
         print_table(formulae)
