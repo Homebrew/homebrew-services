@@ -11,6 +11,7 @@ describe Service::Commands::List do
 
   describe "#run" do
     it "fails with empty list" do
+      allow_any_instance_of(IO).to receive(:tty?).and_return(true)
       expect(Service::Formulae).to receive(:services_list).and_return([])
       expect do
         described_class.run
