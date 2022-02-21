@@ -38,13 +38,13 @@ describe Service::Commands::List do
         schedulable: false,
       }
 
-      out_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
-      out_str = "#{JSON.pretty_generate([out_formula])}\n"
+      filtered_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
+      expected_output = "#{JSON.pretty_generate([filtered_formula])}\n"
 
       expect(Service::Formulae).to receive(:services_list).and_return([formula])
       expect do
         described_class.run(json: true)
-      end.to output(out_str).to_stdout
+      end.to output(expected_output).to_stdout
     end
   end
 
@@ -84,36 +84,41 @@ describe Service::Commands::List do
 
   describe "#print_json" do
     it "prints all standard values" do
-      formula = [{ name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :stopped }]
-      expected_output = JSON.pretty_generate(formula).to_s + "\n"
+      formula = { name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :stopped }
+      filtered_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
+      expected_output = "#{JSON.pretty_generate([filtered_formula])}\n"
       expect do
-        described_class.print_json(formula)
+        described_class.print_json([formula])
       end.to output(expected_output).to_stdout
     end
 
     it "prints without user or file data" do
-      formula = [{ name: "a", user: nil, file: nil, status: :started, loaded: true }]
-      expected_output = JSON.pretty_generate([{ name: "a", user: nil, file: nil, status: :started }]).to_s + "\n"
+      formula = { name: "a", user: nil, file: nil, status: :started, loaded: true }
+      filtered_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
+      expected_output = "#{JSON.pretty_generate([filtered_formula])}\n"
       expect do
-        described_class.print_json(formula)
+        described_class.print_json([formula])
       end.to output(expected_output).to_stdout
     end
 
     it "prints shortened home directory" do
       ENV["HOME"] = "/tmp"
-      formula = [{ name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :started, loaded: true }]
-      expected_output = JSON.pretty_generate([{ name: "a", user: "u", file: "~/file.file", status: :started }]).to_s + "\n"
+      formula = { name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :started, loaded: true }
+      filtered_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
+      filtered_formula[:file] = "~/file.file"; #Filepath will get updated because of the shortened home directory
+      expected_output = "#{JSON.pretty_generate([filtered_formula])}\n"
       expect do
-        described_class.print_json(formula)
+        described_class.print_json([formula])
       end.to output(expected_output).to_stdout
     end
 
     it "includes an exit code" do
       file = Pathname.new("/tmp/file.file")
-      formula = [{ name: "a", user: "u", file: file, status: :error, exit_code: 256, loaded: true }]
-      expected_output = JSON.pretty_generate([{ name: "a", user: "u", file: file, status: :error, exit_code: 256 }]).to_s + "\n"
+      formula = { name: "a", user: "u", file: file, status: :error, exit_code: 256, loaded: true }
+      filtered_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
+      expected_output = "#{JSON.pretty_generate([filtered_formula])}\n"
       expect do
-        described_class.print_json(formula)
+        described_class.print_json([formula])
       end.to output(expected_output).to_stdout
     end
   end

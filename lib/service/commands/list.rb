@@ -29,7 +29,7 @@ module Service
       # @private
       def print_json(formulae)
         services = formulae.map do |formula|
-          if formula[:loaded]
+          if formula.key?(:loaded)
             formula[:file] = formula[:file].to_s.gsub(ENV["HOME"], "~").presence
           end
  
