@@ -85,8 +85,7 @@ describe Service::Commands::List do
   describe "#print_json" do
     it "prints all standard values" do
       formula = { name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :stopped }
-      filtered_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
-      expected_output = "#{JSON.pretty_generate([filtered_formula])}\n"
+      expected_output = "#{JSON.pretty_generate([formula])}\n"
       expect do
         described_class.print_json([formula])
       end.to output(expected_output).to_stdout
@@ -103,7 +102,8 @@ describe Service::Commands::List do
 
     it "prints shortened home directory" do
       ENV["HOME"] = "/tmp"
-      formula = { name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :started, loaded: true }
+      file = Pathname.new("/tmp/file.file")
+      formula = { name: "a", user: "u", file: file, status: :started, loaded: true }
       filtered_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
       filtered_formula[:file] = "~/file.file"; #Filepath will get updated because of the shortened home directory
       expected_output = "#{JSON.pretty_generate([filtered_formula])}\n"
