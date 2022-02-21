@@ -26,6 +26,26 @@ describe Service::Commands::List do
         described_class.run
       end.to output(out).to_stdout
     end
+
+    it "succeeds with list - JSON" do
+      formula = {
+        name:        "service",
+        user:        "user",
+        status:      :started,
+        file:        "/dev/null",
+        running:     true,
+        loaded:      true,
+        schedulable: false,
+      }
+
+      out_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
+      out_str = "#{JSON.pretty_generate([out_formula])}\n"
+
+      expect(Service::Formulae).to receive(:services_list).and_return([formula])
+      expect do
+        described_class.run(json: true)
+      end.to output(out_str).to_stdout
+    end
   end
 
   describe "#print_table" do
@@ -58,6 +78,42 @@ describe Service::Commands::List do
       expected_output = "<BOLD>Name Status        User File<RESET>\na    <RED>error  <RESET>256 u    /tmp/file.file\n"
       expect do
         described_class.print_table([formula])
+      end.to output(expected_output).to_stdout
+    end
+  end
+
+  describe "#print_json" do
+    it "prints all standard values" do
+      formula = [{ name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :stopped }]
+      expected_output = JSON.pretty_generate(formula).to_s + "\n"
+      expect do
+        described_class.print_json(formula)
+      end.to output(expected_output).to_stdout
+    end
+
+    it "prints without user or file data" do
+      formula = [{ name: "a", user: nil, file: nil, status: :started, loaded: true }]
+      expected_output = JSON.pretty_generate([{ name: "a", user: nil, file: nil, status: :started }]).to_s + "\n"
+      expect do
+        described_class.print_json(formula)
+      end.to output(expected_output).to_stdout
+    end
+
+    it "prints shortened home directory" do
+      ENV["HOME"] = "/tmp"
+      formula = [{ name: "a", user: "u", file: Pathname.new("/tmp/file.file"), status: :started, loaded: true }]
+      expected_output = JSON.pretty_generate([{ name: "a", user: "u", file: "~/file.file", status: :started }]).to_s + "\n"
+      expect do
+        described_class.print_json(formula)
+      end.to output(expected_output).to_stdout
+    end
+
+    it "includes an exit code" do
+      file = Pathname.new("/tmp/file.file")
+      formula = [{ name: "a", user: "u", file: file, status: :error, exit_code: 256, loaded: true }]
+      expected_output = JSON.pretty_generate([{ name: "a", user: "u", file: file, status: :error, exit_code: 256 }]).to_s + "\n"
+      expect do
+        described_class.print_json(formula)
       end.to output(expected_output).to_stdout
     end
   end

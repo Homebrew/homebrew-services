@@ -9,13 +9,34 @@ module Service
 
       TRIGGERS = [nil, "list", "ls"].freeze
 
-      def run
+      def run(json: nil)
         formulae = Formulae.services_list
         if formulae.blank?
           opoo "No services available to control with `#{Service::ServicesCli.bin}`" if $stderr.tty?
           return
         end
-        print_table(formulae)
+
+        if json
+          print_json(formulae)
+        else
+          print_table(formulae)
+        end
+      end
+
+      JSON_FIELDS = [:name, :status, :user, :file, :exit_code].freeze
+
+      # Print the JSON representation in the CLI
+      # @private
+      def print_json(formulae)
+        services = formulae.map do |formula|
+          if formula[:loaded]
+            formula[:file] = formula[:file].to_s.gsub(ENV["HOME"], "~").presence
+          end
+ 
+          formula.select { |key, val| JSON_FIELDS.include?(key) }
+        end
+
+        puts JSON.pretty_generate(services)
       end
 
       # Print the table in the CLI

@@ -87,7 +87,7 @@ module Homebrew
     # Dispatch commands and aliases.
     case subcommand.presence
     when *Service::Commands::List::TRIGGERS
-      Service::Commands::List.run
+      Service::Commands::List.run(json: args.json?)
     when *Service::Commands::Cleanup::TRIGGERS
       Service::Commands::Cleanup.run
     when *Service::Commands::Info::TRIGGERS
