@@ -38,7 +38,7 @@ describe Service::Commands::List do
         schedulable: false,
       }
 
-      filtered_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
+      filtered_formula = formula.select { |key, _val| described_class::JSON_FIELDS.include?(key) }
       expected_output = "#{JSON.pretty_generate([filtered_formula])}\n"
 
       expect(Service::Formulae).to receive(:services_list).and_return([formula])
@@ -93,19 +93,7 @@ describe Service::Commands::List do
 
     it "prints without user or file data" do
       formula = { name: "a", user: nil, file: nil, status: :started, loaded: true }
-      filtered_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
-      expected_output = "#{JSON.pretty_generate([filtered_formula])}\n"
-      expect do
-        described_class.print_json([formula])
-      end.to output(expected_output).to_stdout
-    end
-
-    it "prints shortened home directory" do
-      ENV["HOME"] = "/tmp"
-      file = Pathname.new("/tmp/file.file")
-      formula = { name: "a", user: "u", file: file, status: :started, loaded: true }
-      filtered_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
-      filtered_formula[:file] = "~/file.file"; #Filepath will get updated because of the shortened home directory
+      filtered_formula = formula.select { |key, _val| described_class::JSON_FIELDS.include?(key) }
       expected_output = "#{JSON.pretty_generate([filtered_formula])}\n"
       expect do
         described_class.print_json([formula])
@@ -115,7 +103,7 @@ describe Service::Commands::List do
     it "includes an exit code" do
       file = Pathname.new("/tmp/file.file")
       formula = { name: "a", user: "u", file: file, status: :error, exit_code: 256, loaded: true }
-      filtered_formula = formula.select { |key, val| described_class::JSON_FIELDS.include?(key) }
+      filtered_formula = formula.select { |key, _val| described_class::JSON_FIELDS.include?(key) }
       expected_output = "#{JSON.pretty_generate([filtered_formula])}\n"
       expect do
         described_class.print_json([formula])

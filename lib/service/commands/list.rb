@@ -29,11 +29,7 @@ module Service
       # @private
       def print_json(formulae)
         services = formulae.map do |formula|
-          if formula.key?(:loaded)
-            formula[:file] = formula[:file].to_s.gsub(ENV["HOME"], "~").presence
-          end
- 
-          formula.select { |key, val| JSON_FIELDS.include?(key) }
+          formula.select { |key, _val| JSON_FIELDS.include?(key) }
         end
 
         puts JSON.pretty_generate(services)
