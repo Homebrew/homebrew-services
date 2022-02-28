@@ -124,7 +124,7 @@ module Service
           if service.service_file_present?
             odie <<~EOS
               Service `#{service.name}` is started as `#{service.owner}`. Try:
-                #{"sudo " unless ServicesCli.root?}#{bin} stop #{service.name}
+                #{"sudo " unless System.root?}#{bin} stop #{service.name}
             EOS
           else
             opoo "Service `#{service.name}` is not started."
