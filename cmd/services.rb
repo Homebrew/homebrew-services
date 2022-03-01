@@ -15,10 +15,10 @@ module Homebrew
         If `sudo` is passed, operate on `/Library/LaunchDaemons` (started at boot).
         Otherwise, operate on `~/Library/LaunchAgents` (started at login).
 
-        [`sudo`] `brew services` [`list`]:
-        List all managed services for the current user (or root).
+        [`sudo`] `brew services` [`list`] (`--json`):
+        List information about all managed services for the current user (or root).
 
-        [`sudo`] `brew services info` (<formula>|`--all`):
+        [`sudo`] `brew services info` (<formula>|`--all`|`--json`):
         List all managed services for the current user (or root).
 
         [`sudo`] `brew services run` (<formula>|`--all`):
@@ -87,7 +87,7 @@ module Homebrew
     # Dispatch commands and aliases.
     case subcommand.presence
     when *Service::Commands::List::TRIGGERS
-      Service::Commands::List.run
+      Service::Commands::List.run(json: args.json?)
     when *Service::Commands::Cleanup::TRIGGERS
       Service::Commands::Cleanup.run
     when *Service::Commands::Info::TRIGGERS
