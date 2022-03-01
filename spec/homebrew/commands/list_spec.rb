@@ -80,7 +80,7 @@ describe Service::Commands::List do
     end
 
     it "returns other" do
-      expect(described_class.get_status_string(:other)).to eq(nil)
+      expect(described_class.get_status_string(:other)).to be_nil
     end
   end
 end

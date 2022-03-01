@@ -32,7 +32,7 @@ describe Service::FormulaWrapper do
     it "Other - outputs no service file" do
       allow(Service::System).to receive(:launchctl?).and_return(false)
       allow(Service::System).to receive(:systemctl?).and_return(false)
-      expect(service.service_file).to eq(nil)
+      expect(service.service_file).to be_nil
     end
   end
 
@@ -57,7 +57,7 @@ describe Service::FormulaWrapper do
     it "Other - outputs no service name" do
       allow(Service::System).to receive(:launchctl?).and_return(false)
       allow(Service::System).to receive(:systemctl?).and_return(false)
-      expect(service.service_name).to eq(nil)
+      expect(service.service_name).to be_nil
     end
   end
 
@@ -111,7 +111,7 @@ describe Service::FormulaWrapper do
 
   describe "#installed?" do
     it "outputs if the service formula is installed" do
-      expect(service.installed?).to eq(nil)
+      expect(service.installed?).to be_nil
     end
   end
 
@@ -120,34 +120,34 @@ describe Service::FormulaWrapper do
       allow(Service::System).to receive(:launchctl?).and_return(true)
       allow(Service::System).to receive(:systemctl?).and_return(false)
       allow(service).to receive(:quiet_system).and_return(false)
-      expect(service.loaded?).to eq(false)
+      expect(service.loaded?).to be(false)
     end
 
     it "systemD - outputs if the service is loaded" do
       allow(Service::System).to receive(:launchctl?).and_return(false)
       allow(Service::System).to receive(:systemctl?).and_return(true)
       allow(service).to receive(:quiet_system).and_return(false)
-      expect(service.loaded?).to eq(false)
+      expect(service.loaded?).to be(false)
     end
 
     it "Other - outputs no status" do
       allow(Service::System).to receive(:launchctl?).and_return(false)
       allow(Service::System).to receive(:systemctl?).and_return(false)
-      expect(service.loaded?).to eq(nil)
+      expect(service.loaded?).to be_nil
     end
   end
 
   describe "#plist?" do
     it "false if not installed" do
       allow(service).to receive(:installed?).and_return(false)
-      expect(service.plist?).to eq(false)
+      expect(service.plist?).to be(false)
     end
 
     it "true if installed and file" do
       tempfile = File.new("/tmp/foo", File::CREAT)
       allow(service).to receive(:installed?).and_return(true)
       allow(service).to receive(:service_file).and_return(Pathname.new(tempfile))
-      expect(service.plist?).to eq(true)
+      expect(service.plist?).to be(true)
       File.delete(tempfile)
     end
 
@@ -155,7 +155,7 @@ describe Service::FormulaWrapper do
       allow(service).to receive(:installed?).and_return(true)
       allow(service).to receive(:service_file).and_return(Pathname.new("/dev/null"))
       allow(service).to receive(:formula).and_return(OpenStruct.new(plist: "a"))
-      expect(service.plist?).to eq(true)
+      expect(service.plist?).to be(true)
     end
 
     it "false if opt_prefix missing" do
@@ -163,7 +163,7 @@ describe Service::FormulaWrapper do
       allow(service).to receive(:service_file).and_return(Pathname.new("/dev/null"))
       allow(service).to receive(:formula).and_return(OpenStruct.new(plist:      nil,
                                                                     opt_prefix: Pathname.new("/dfslkfhjdsolshlk")))
-      expect(service.plist?).to eq(false)
+      expect(service.plist?).to be(false)
     end
   end
 
@@ -183,7 +183,7 @@ describe Service::FormulaWrapper do
     it "nil if no file present" do
       allow(service).to receive(:boot_path_service_file_present?).and_return(false)
       allow(service).to receive(:user_path_service_file_present?).and_return(false)
-      expect(service.owner).to eq(nil)
+      expect(service.owner).to be_nil
     end
   end
 
@@ -191,19 +191,19 @@ describe Service::FormulaWrapper do
     it "macOS - outputs if the service file is present" do
       allow(Service::System).to receive(:launchctl?).and_return(true)
       allow(Service::System).to receive(:systemctl?).and_return(false)
-      expect(service.service_file_present?).to eq(false)
+      expect(service.service_file_present?).to be(false)
     end
 
     it "macOS - outputs if the service file is present for root" do
       allow(Service::System).to receive(:launchctl?).and_return(true)
       allow(Service::System).to receive(:systemctl?).and_return(false)
-      expect(service.service_file_present?(for: :root)).to eq(false)
+      expect(service.service_file_present?(for: :root)).to be(false)
     end
 
     it "macOS - outputs if the service file is present for user" do
       allow(Service::ServicesCli).to receive(:launchctl?).and_return(true)
       allow(Service::ServicesCli).to receive(:systemctl?).and_return(false)
-      expect(service.service_file_present?(for: :user)).to eq(false)
+      expect(service.service_file_present?(for: :user)).to be(false)
     end
   end
 
@@ -211,51 +211,51 @@ describe Service::FormulaWrapper do
     it "macOS - outputs the service file owner" do
       allow(Service::System).to receive(:launchctl?).and_return(true)
       allow(Service::System).to receive(:systemctl?).and_return(false)
-      expect(service.owner).to eq(nil)
+      expect(service.owner).to be_nil
     end
   end
 
   describe "#pid?" do
     it "outputs false because there is not pid" do
       allow(service).to receive(:pid).and_return(nil)
-      expect(service.pid?).to eq(false)
+      expect(service.pid?).to be(false)
     end
   end
 
   describe "#pid" do
     it "outputs nil because there is not pid" do
-      expect(service.pid).to eq(nil)
+      expect(service.pid).to be_nil
     end
   end
 
   describe "#error?" do
     it "outputs false because there a no PID" do
       allow(service).to receive(:pid).and_return(nil)
-      expect(service.error?).to eq(false)
+      expect(service.error?).to be(false)
     end
 
     it "outputs false because there is a PID but no exit" do
       allow(service).to receive(:pid).and_return(12)
       allow(service).to receive(:exit_code).and_return(nil)
-      expect(service.error?).to eq(false)
+      expect(service.error?).to be(false)
     end
   end
 
   describe "#exit_code" do
     it "outputs nil because there is no exit code" do
-      expect(service.exit_code).to eq(nil)
+      expect(service.exit_code).to be_nil
     end
   end
 
   describe "#unknown_status?" do
     it "outputs true because there is no PID" do
-      expect(service.unknown_status?).to eq(true)
+      expect(service.unknown_status?).to be(true)
     end
   end
 
   describe "#service_startup?" do
     it "outputs false since there is no startup" do
-      expect(service.service_startup?).to eq(false)
+      expect(service.service_startup?).to be(false)
     end
 
     it "outputs true since there is a startup" do
@@ -265,7 +265,7 @@ describe Service::FormulaWrapper do
 
       service = described_class.new(formula)
 
-      expect(service.service_startup?).to eq(true)
+      expect(service.service_startup?).to be(true)
     end
   end
 
