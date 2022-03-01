@@ -21,7 +21,7 @@ describe Service::Commands::Restart do
       expect(Service::ServicesCli).not_to receive(:stop)
       expect(Service::ServicesCli).to receive(:start).once
       service = OpenStruct.new(service_name: "name", loaded?: false)
-      expect(described_class.run([service], nil, verbose: false)).to eq(nil)
+      expect(described_class.run([service], nil, verbose: false)).to be_nil
     end
 
     it "starts if services are loaded with file" do
@@ -29,7 +29,7 @@ describe Service::Commands::Restart do
       expect(Service::ServicesCli).to receive(:start).once
       expect(Service::ServicesCli).to receive(:stop).once
       service = OpenStruct.new(service_name: "name", loaded?: true, service_file_present?: true)
-      expect(described_class.run([service], nil, verbose: false)).to eq(nil)
+      expect(described_class.run([service], nil, verbose: false)).to be_nil
     end
 
     it "runs if services are loaded without file" do
@@ -37,7 +37,7 @@ describe Service::Commands::Restart do
       expect(Service::ServicesCli).to receive(:run).once
       expect(Service::ServicesCli).to receive(:stop).once
       service = OpenStruct.new(service_name: "name", loaded?: true, service_file_present?: false)
-      expect(described_class.run([service], nil, verbose: false)).to eq(nil)
+      expect(described_class.run([service], nil, verbose: false)).to be_nil
     end
   end
 end

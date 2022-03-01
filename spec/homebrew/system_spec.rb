@@ -11,13 +11,13 @@ describe Service::System do
 
   describe "#launchctl?" do
     it "outputs launchctl presence" do
-      expect(described_class.launchctl?).to eq(true)
+      expect(described_class.launchctl?).to be(true)
     end
   end
 
   describe "#systemctl?" do
     it "outputs systemctl presence" do
-      expect(described_class.systemctl?).to eq(true)
+      expect(described_class.systemctl?).to be(true)
     end
   end
 
@@ -29,7 +29,7 @@ describe Service::System do
 
     it "outputs systemctl scope for root" do
       allow(described_class).to receive(:root?).and_return(true)
-      expect(described_class.systemctl_scope).to eq(nil)
+      expect(described_class.systemctl_scope).to be_nil
     end
   end
 
@@ -41,7 +41,7 @@ describe Service::System do
 
   describe "#root?" do
     it "checks if the command is ran as root" do
-      expect(described_class.root?).to eq(false)
+      expect(described_class.root?).to be(false)
     end
   end
 
@@ -68,7 +68,7 @@ describe Service::System do
       allow(Utils).to receive(:safe_popen_read).and_return <<~EOS
         USER
       EOS
-      expect(described_class.user_of_process(50)).to eq(nil)
+      expect(described_class.user_of_process(50)).to be_nil
     end
   end
 
