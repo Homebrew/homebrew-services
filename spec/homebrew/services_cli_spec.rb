@@ -54,8 +54,9 @@ describe Service::ServicesCli do
     end
 
     it "checks if target service is already running and suggests restart instead" do
-      expected_output = "Service `example_service` already running, use `brew services restart example_service` to restart.\n"
-      service = instance_double("service", :name => "example_service", :pid? => true)
+      expected_output = "Service `example_service` already running," +
+        " use `brew services restart example_service` to restart.\n"
+      service = instance_double("service", name: "example_service", pid?: true)
       expect do
         services_cli.run([service])
       end.to output(expected_output).to_stdout
@@ -76,8 +77,9 @@ describe Service::ServicesCli do
     end
 
     it "checks if target service has already been started and suggests restart instead" do
-      expected_output = "Service `example_service` already started, use `brew services restart example_service` to restart.\n"
-      service = instance_double("service", :name => "example_service", :pid? => true)
+      expected_output = "Service `example_service` already started," +
+        " use `brew services restart example_service` to restart.\n"
+      service = instance_double("service", name: "example_service", pid?: true)
       expect do
         services_cli.start([service])
       end.to output(expected_output).to_stdout
