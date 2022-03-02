@@ -52,6 +52,15 @@ describe Service::ServicesCli do
       expect(Service::System).not_to receive(:root?)
       services_cli.run([])
     end
+
+    it "checks if target service is already running and suggests restart instead" do
+      expected_output = "Service `example_service` already running," \
+                        " use `brew services restart example_service` to restart.\n"
+      service = instance_double("service", name: "example_service", pid?: true)
+      expect do
+        services_cli.run([service])
+      end.to output(expected_output).to_stdout
+    end
   end
 
   describe "#start" do
@@ -65,6 +74,15 @@ describe Service::ServicesCli do
     it "checks empty targets cause no error" do
       expect(Service::System).not_to receive(:root?)
       services_cli.start([])
+    end
+
+    it "checks if target service has already been started and suggests restart instead" do
+      expected_output = "Service `example_service` already started," \
+                        " use `brew services restart example_service` to restart.\n"
+      service = instance_double("service", name: "example_service", pid?: true)
+      expect do
+        services_cli.start([service])
+      end.to output(expected_output).to_stdout
     end
   end
 

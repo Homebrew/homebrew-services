@@ -86,7 +86,7 @@ module Service
         raise UsageError, "Provided service file does not exist" unless file.exist?
       end
 
-      targets.reject(&:pid?).each do |service|
+      targets.each do |service|
         if service.pid?
           puts "Service `#{service.name}` already started, use `#{bin} restart #{service.name}` to restart."
           next
