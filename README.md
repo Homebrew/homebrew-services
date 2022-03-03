@@ -1,12 +1,10 @@
 # Homebrew Services
 
-Manage background services with macOS' `launchctl` daemon manager.
+Manage background services using the daemon manager `launchctl` on macOS' or `systemctl` on Linux.
 
 ## Requirements
 
 [Homebrew](https://github.com/Homebrew/brew) is used for installing the services.
-
-This does not (and cannot) work with Homebrew on Linux (so don't file Linux issues, please).
 
 ## Install
 
@@ -14,8 +12,8 @@ This does not (and cannot) work with Homebrew on Linux (so don't file Linux issu
 
 ## Usage
 
-See [the `brew services` section of the `brew man` output](https://docs.brew.sh/Manpage#services-subcommand) or `brew services --help`.
-To specify a plist file use `brew services <command> <formula> --file=<file>`.
+See [the `brew services` section of the `brew man` output](https://docs.brew.sh/Manpage#services-subcommand) or `brew services --help`.  
+To specify a service file use `brew services <command> <formula> --file=<file>`.
 
 
 ## Tests
