@@ -1,6 +1,6 @@
 # Homebrew Services
 
-Manage background services using the daemon manager `launchctl` on macOS' or `systemctl` on Linux.
+Manage background services using the daemon manager `launchctl` on macOS or `systemctl` on Linux.
 
 ## Requirements
 
