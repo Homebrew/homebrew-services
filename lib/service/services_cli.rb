@@ -157,7 +157,7 @@ module Service
       quiet_system System.launchctl, "kill", "SIGTERM", "#{System.domain_target}/#{service.service_name}"
       while service.loaded?
         sleep(5)
-        break if service.loaded?
+        break unless service.loaded?
 
         quiet_system System.launchctl, "kill", "SIGKILL", "#{System.domain_target}/#{service.service_name}"
       end
