@@ -155,26 +155,20 @@ module Service
     # Stop a service but keep it registered.
     def kill(targets, verbose: false)
       targets.each do |service|
-        unless service.pid?
+        if !service.pid?
           opoo "Service `#{service.name}` is not started."
-          next
-        end
-
-        puts "Killing `#{service.name}`... (might take a while)"
-        if System.systemctl?
-          quiet_system System.systemctl, System.systemctl_scope, "stop", service.service_name
-        elsif System.launchctl?
-          quiet_system System.launchctl, "stop", "#{System.domain_target}/#{service.service_name}"
-        end
-
-        if service.pid?
-          sleep(5)
-
-          if service.pid?
-            opoo "Service `#{service.name}` is set to automatically restart and can't be killed."
-          else
-            ohai "Successfully killed `#{service.name}` (label: #{service.service_name})"
+        elsif service.keep_alive?
+          opoo "Service `#{service.name}` is set to automatically restart and can't be killed."
+        else
+          puts "Killing `#{service.name}`... (might take a while)"
+          if System.systemctl?
+            quiet_system System.systemctl, System.systemctl_scope, "stop", service.service_name
+          elsif System.launchctl?
+            quiet_system System.launchctl, "stop", "#{System.domain_target}/#{service.service_name}"
           end
+
+          sleep(5) while service.pid?
+          ohai "Successfully killed `#{service.name}` (label: #{service.service_name})"
         end
       end
     end

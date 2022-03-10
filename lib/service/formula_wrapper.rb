@@ -42,6 +42,13 @@ module Service
       @timed ||= formula.service.timed?
     end
 
+    # Delegate access to `formula.service.keep_alive?`.`
+    def keep_alive?
+      return unless @formula.service?
+
+      @keep_alive ||= formula.service.keep_alive?
+    end
+
     # service_name delegates with formula.plist_name or formula.service_name for systemd (e.g., `homebrew.<formula>`).
     def service_name
       @service_name ||= if System.launchctl?
