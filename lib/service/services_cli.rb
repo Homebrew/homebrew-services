@@ -156,9 +156,9 @@ module Service
     def kill(targets, verbose: false)
       targets.each do |service|
         if !service.pid?
-          opoo "Service `#{service.name}` is not started."
+          puts "Service `#{service.name}` is not started."
         elsif service.keep_alive?
-          opoo "Service `#{service.name}` is set to automatically restart and can't be killed."
+          puts "Service `#{service.name}` is set to automatically restart and can't be killed."
         else
           puts "Killing `#{service.name}`... (might take a while)"
           if System.systemctl?
@@ -167,8 +167,11 @@ module Service
             quiet_system System.launchctl, "stop", "#{System.domain_target}/#{service.service_name}"
           end
 
-          sleep(5) while service.pid?
-          ohai "Successfully killed `#{service.name}` (label: #{service.service_name})"
+          if service.pid?
+            opoo "Unable to kill `#{service.name}` (label: #{service.service_name})"
+          else
+            ohai "Successfully killed `#{service.name}` (label: #{service.service_name})"
+          end
         end
       end
     end
