@@ -30,6 +30,9 @@ module Homebrew
         [`sudo`] `brew services stop` (<formula>|`--all`):
         Stop the service <formula> immediately and unregister it from launching at login (or boot).
 
+        [`sudo`] `brew services kill` (<formula>|`--all`):
+        Stop the service <formula> immediately but keep it registered to launch at login (or boot).
+
         [`sudo`] `brew services restart` (<formula>|`--all`):
         Stop (if necessary) and start the service <formula> immediately and register it to launch at login (or boot).
 
@@ -100,6 +103,8 @@ module Homebrew
       Service::Commands::Start.run(targets, custom_plist, verbose: args.verbose?)
     when *Service::Commands::Stop::TRIGGERS
       Service::Commands::Stop.run(targets, verbose: args.verbose?)
+    when *Service::Commands::Kill::TRIGGERS
+      Service::Commands::Kill.run(targets, verbose: args.verbose?)
     else
       raise UsageError, "unknown subcommand: `#{subcommand}`"
     end

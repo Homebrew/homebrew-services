@@ -41,7 +41,7 @@ module Service
         if (svc = FormulaWrapper.from(label))
           unless svc.dest.file?
             puts format("%-15.15<name>s #{Tty.bold}stale#{Tty.reset} => killing service...", name: svc.name)
-            kill(svc)
+            launchctl_kill(svc)
             cleaned << label
           end
         else
@@ -146,14 +146,41 @@ module Service
         if service.dest.exist?
           ohai "Successfully stopped `#{service.name}` (label: #{service.service_name})"
         elsif service.loaded?
-          kill(service)
+          launchctl_kill(service)
         end
         rm service.dest if service.dest.exist?
       end
     end
 
+    # Stop a service but keep it registered.
+    def kill(targets, verbose: false)
+      targets.each do |service|
+        unless service.pid?
+          opoo "Service `#{service.name}` is not started."
+          next
+        end
+
+        puts "Killing `#{service.name}`... (might take a while)"
+        if System.systemctl?
+          quiet_system System.systemctl, System.systemctl_scope, "stop", service.service_name
+        elsif System.launchctl?
+          quiet_system System.launchctl, "stop", "#{System.domain_target}/#{service.service_name}"
+        end
+
+        if service.pid?
+          sleep(5)
+
+          if service.pid?
+            opoo "Service `#{service.name}` is set to automatically restart and can't be killed."
+          else
+            ohai "Successfully killed `#{service.name}` (label: #{service.service_name})"
+          end
+        end
+      end
+    end
+
     # Kill a service that has no plist file.
-    def kill(service)
+    def launchctl_kill(service)
       quiet_system System.launchctl, "kill", "SIGTERM", "#{System.domain_target}/#{service.service_name}"
       while service.loaded?
         sleep(5)
