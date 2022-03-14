@@ -93,6 +93,29 @@ describe Service::ServicesCli do
     end
   end
 
+  describe "#kill" do
+    it "checks empty targets cause no error" do
+      expect(Service::System).not_to receive(:root?)
+      services_cli.kill([])
+    end
+
+    it "prints a message if service is not running" do
+      expected_output = "Service `example_service` is not started.\n"
+      service = instance_double("service", name: "example_service", pid?: false)
+      expect do
+        services_cli.kill([service])
+      end.to output(expected_output).to_stdout
+    end
+
+    it "prints a message if service is set to keep alive" do
+      expected_output = "Service `example_service` is set to automatically restart and can't be killed.\n"
+      service = instance_double("service", name: "example_service", pid?: true, keep_alive?: true)
+      expect do
+        services_cli.kill([service])
+      end.to output(expected_output).to_stdout
+    end
+  end
+
   describe "#install_service_file" do
     it "checks service is installed" do
       expect do

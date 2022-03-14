@@ -46,6 +46,8 @@ module Service
     def keep_alive?
       return unless @formula.service?
 
+      require_relative "../../../../../Homebrew/service"
+
       @keep_alive ||= formula.service.keep_alive?
     end
 
