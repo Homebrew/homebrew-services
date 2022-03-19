@@ -306,7 +306,7 @@ describe Service::FormulaWrapper do
       ENV["HOME"] = "/tmp_home"
       allow(Service::System).to receive(:launchctl?).and_return(true)
       allow(Service::System).to receive(:systemctl?).and_return(false)
-      expect(service).to receive(:service?).and_return(false)
+      expect(service).to receive(:service?).twice.and_return(false)
       expect(service).to receive(:service_file_present?).and_return(true)
       expected = {
         exit_code:    nil,
@@ -328,9 +328,9 @@ describe Service::FormulaWrapper do
       service_stub = OpenStruct.new(manual_command: "/bin/cmd")
       allow(Service::System).to receive(:launchctl?).and_return(true)
       allow(Service::System).to receive(:systemctl?).and_return(false)
-      expect(service).to receive(:service?).and_return(true)
+      expect(service).to receive(:service?).twice.and_return(true)
       expect(service).to receive(:service_file_present?).and_return(true)
-      expect(formula).to receive(:service).and_return(service_stub)
+      expect(service).to receive(:load_service).twice.and_return(service_stub)
       expected = {
         command:        "/bin/cmd",
         cron:           nil,
