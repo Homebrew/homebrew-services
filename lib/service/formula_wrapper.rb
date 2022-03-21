@@ -35,11 +35,12 @@ module Service
 
     # Delegate access to `formula.service.timed?`.
     def timed?
-      return unless @formula.service?
+      @timed ||= (load_service.timed? if service?)
+    end
 
-      require_relative "../../../../../Homebrew/service"
-
-      @timed ||= formula.service.timed?
+    # Delegate access to `formula.service.keep_alive?`.`
+    def keep_alive?
+      @keep_alive ||= (load_service.keep_alive? if service?)
     end
 
     # service_name delegates with formula.plist_name or formula.service_name for systemd (e.g., `homebrew.<formula>`).
@@ -183,7 +184,7 @@ module Service
 
       return hash unless service?
 
-      service = formula.service
+      service = load_service
       hash[:command] = service.manual_command
       hash[:working_dir] = service.working_dir
       hash[:root_dir] = service.root_dir
@@ -196,6 +197,15 @@ module Service
     end
 
     private
+
+    # The purpose of this function is to lazy load the Homebrew::Service class
+    # and avoid nameclashes with the current Service module.
+    # It should be used instead of calling formula.service directly.
+    def load_service
+      require_relative "../../../../../Homebrew/service"
+
+      formula.service
+    end
 
     def operational_status
       if pid?
