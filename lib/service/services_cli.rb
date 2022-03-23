@@ -39,15 +39,12 @@ module Service
       cleaned = []
       running.each do |label|
         if (svc = FormulaWrapper.from(label))
-          unless svc.dest.file?
-            puts format("%-15.15<name>s #{Tty.bold}stale#{Tty.reset} => killing service...", name: svc.name)
-            launchctl_kill(svc)
-            cleaned << label
-          end
+          cleaned << label unless svc.dest.file?
         else
           opoo "Service #{label} not managed by `#{bin}` => skipping"
         end
       end
+      kill(cleaned)
       cleaned
     end
 
@@ -116,7 +113,7 @@ module Service
       end
     end
 
-    # Stop a service, or kill it if no service file is available.
+    # Stop a service and unregister it.
     def stop(targets, verbose: false)
       targets.each do |service|
         unless service.loaded?
@@ -134,21 +131,22 @@ module Service
 
         puts "Stopping `#{service.name}`... (might take a while)"
         if System.systemctl?
-          quiet_system System.systemctl, System.systemctl_scope, "stop", service.service_name
-          next
+          quiet_system System.systemctl, System.systemctl_scope, "disable", "--now", service.service_name
+        elsif System.launchctl?
+          quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
+          while $CHILD_STATUS.to_i == 9216 || service.loaded?
+            sleep(1)
+            quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
+          end
+          quiet_system System.launchctl, "stop", "#{System.domain_target}/#{service.service_name}" if service.pid?
+          rm service.dest if service.dest.exist?
         end
 
-        quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
-        while $CHILD_STATUS.to_i == 9216 || service.loaded?
-          sleep(1)
-          quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
-        end
-        if service.dest.exist?
+        if service.pid?
+          opoo "Unable to stop `#{service.name}` (label: #{service.service_name})"
+        else
           ohai "Successfully stopped `#{service.name}` (label: #{service.service_name})"
-        elsif service.loaded?
-          launchctl_kill(service)
         end
-        rm service.dest if service.dest.exist?
       end
     end
 
@@ -174,18 +172,6 @@ module Service
           end
         end
       end
-    end
-
-    # Kill a service that has no plist file.
-    def launchctl_kill(service)
-      quiet_system System.launchctl, "kill", "SIGTERM", "#{System.domain_target}/#{service.service_name}"
-      while service.loaded?
-        sleep(5)
-        break unless service.loaded?
-
-        quiet_system System.launchctl, "kill", "SIGKILL", "#{System.domain_target}/#{service.service_name}"
-      end
-      ohai "Successfully stopped `#{service.name}` via #{service.service_name}"
     end
 
     # protections to avoid users editing root services
