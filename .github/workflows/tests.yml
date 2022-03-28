@@ -109,7 +109,7 @@ jobs:
       run: |
         brew services stop redis
         sleep 5
-        if launchctl list | grep redis; then false; else true; fi
+        brew services list | grep redis | grep none
 
     - name: Test run command
       run: |
