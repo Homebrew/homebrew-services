@@ -205,7 +205,8 @@ describe Service::ServicesCli do
       expect(Service::System).to receive(:root?).exactly(2).and_return(false)
       expect do
         services_cli.service_load(
-          OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false), enable: false
+          OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false,
+                         dest: OpenStruct.new(exist?: true)), enable: false
         )
       end.to output("Successfully ran `name` (label: service.name)\n").to_stdout
     end
@@ -218,7 +219,8 @@ describe Service::ServicesCli do
       expect(Service::System).to receive(:root?).exactly(2).and_return(false)
       expect do
         services_cli.service_load(
-          OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false), enable: true
+          OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false,
+                         dest: OpenStruct.new(exist?: true)), enable: true
         )
       end.to output("Successfully started `name` (label: service.name)\n").to_stdout
     end

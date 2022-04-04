@@ -113,7 +113,7 @@ module Service
       end
     end
 
-    # Stop a service and unregister it.
+    # Stop a service and unload it.
     def stop(targets, verbose: false)
       targets.each do |service|
         unless service.loaded?
@@ -139,10 +139,13 @@ module Service
             quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
           end
           quiet_system System.launchctl, "stop", "#{System.domain_target}/#{service.service_name}" if service.pid?
-          rm service.dest if service.dest.exist?
         end
 
-        if service.pid?
+        rm service.dest if service.dest.exist?
+        # Run daemon-reload on systemctl to finish unloading stopped and deleted service.
+        safe_system System.systemctl, System.systemctl_scope, "daemon-reload" if System.systemctl?
+
+        if service.pid? || service.loaded?
           opoo "Unable to stop `#{service.name}` (label: #{service.service_name})"
         else
           ohai "Successfully stopped `#{service.name}` (label: #{service.service_name})"
@@ -253,6 +256,9 @@ module Service
         file = enable ? service.dest : service.service_file
         launchctl_load(service, file: file, enable: enable)
       elsif System.systemctl?
+        # Systemctl loads based upon location so only install service
+        # file when it is not installed. Used with the `run` command.
+        install_service_file(service, nil) unless service.dest.exist?
         systemd_load(service, enable: enable)
       end
 

@@ -98,7 +98,7 @@ module Service
         # TODO: find replacement for deprecated "list"
         quiet_system System.launchctl, "list", service_name
       elsif System.systemctl?
-        quiet_system System.systemctl, System.systemctl_scope, "list-unit-files", service_file.basename
+        quiet_system System.systemctl, System.systemctl_scope, "status", service_file.basename
       end
     end
 
