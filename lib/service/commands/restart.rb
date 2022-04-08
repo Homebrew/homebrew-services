@@ -7,8 +7,10 @@ module Service
 
       TRIGGERS = %w[restart relaunch reload r].freeze
 
-      def run(targets, _custom_plist, verbose:)
+      def run(targets, custom_plist, verbose:)
         return unless ServicesCli.check(targets)
+
+        odeprecated "the restart command with a service file" if custom_plist.present?
 
         ran = []
         started = []

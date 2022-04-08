@@ -79,6 +79,9 @@ module Service
     # Start a service.
     def start(targets, service_file = nil, verbose: false)
       if service_file.present?
+        raise UsageError, "Adding custom service files is not supported on linux." if System.systemctl?
+        raise UsageError, "The --all and --file= options cannot be used together." if targets.size != 1
+
         file = Pathname.new service_file
         raise UsageError, "Provided service file does not exist" unless file.exist?
       end
@@ -109,7 +112,6 @@ module Service
         next if take_root_ownership(service).nil? && System.root?
 
         service_load(service, enable: true)
-        @service_file = nil
       end
     end
 

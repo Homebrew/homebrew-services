@@ -24,7 +24,7 @@ module Homebrew
         [`sudo`] `brew services run` (<formula>|`--all`):
         Run the service <formula> without registering to launch at login (or boot).
 
-        [`sudo`] `brew services start` (<formula>|`--all`):
+        [`sudo`] `brew services start` (<formula>|`--all`|`--file=`):
         Start the service <formula> immediately and register it to launch at login (or boot).
 
         [`sudo`] `brew services stop` (<formula>|`--all`):
@@ -39,7 +39,7 @@ module Homebrew
         [`sudo`] `brew services cleanup`:
         Remove all unused services.
       EOS
-      flag "--file=", description: "Use the plist file from this location to `start` or `run` the service."
+      flag "--file=", description: "Use the plist file from this location to `start` the service."
       switch "--all", description: "Run <subcommand> on all services."
       switch "--json", description: "Output as JSON."
     end
