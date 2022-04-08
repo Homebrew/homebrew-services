@@ -79,9 +79,6 @@ module Service
     # Start a service.
     def start(targets, service_file = nil, verbose: false)
       if service_file.present?
-        raise UsageError, "Adding custom service files is not supported on linux." if System.systemctl?
-        raise UsageError, "The --all and --file= options cannot be used together." if targets.size != 1
-
         file = Pathname.new service_file
         raise UsageError, "Provided service file does not exist" unless file.exist?
       end
@@ -104,7 +101,7 @@ module Service
         install_service_file(service, file)
 
         if file.blank? && verbose
-          ohai "Generated plist for #{service.formula.name}:"
+          ohai "Generated service file for #{service.formula.name}:"
           puts "   #{service.dest.read.gsub("\n", "\n   ")}"
           puts
         end
@@ -266,6 +263,15 @@ module Service
 
       function = enable ? "started" : "ran"
       ohai("Successfully #{function} `#{service.name}` (label: #{service.service_name})")
+    end
+
+    # Restart an already loaded service.
+    def service_restart(service)
+      if System.systemctl?
+        quiet_system System.systemctl, System.systemctl_scope, "restart", service.service_name
+      elsif System.launchctl?
+        quiet_system System.launchctl, "kickstart", "-k", "#{System.domain_target}/#{service.service_name}"
+      end
     end
 
     def install_service_file(service, file)

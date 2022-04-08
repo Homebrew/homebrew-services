@@ -12,20 +12,22 @@ module Service
 
         odeprecated "the restart command with a service file" if custom_plist.present?
 
-        ran = []
-        started = []
+        start_targets = []
+
         targets.each do |service|
-          if service.loaded? && !service.service_file_present?
-            ran << service
-          else
-            # group not-started services with started ones for restart
-            started << service
+          unless service.loaded?
+            start_targets << service
+            next
           end
-          ServicesCli.stop([service]) if service.loaded?
+
+          if ServicesCli.service_restart(service)
+            ohai "Successfully restarted `#{service.name}` (label: #{service.service_name})"
+          else
+            opoo "Unable to restart `#{service.name}` (label: #{service.service_name})"
+          end
         end
 
-        ServicesCli.run(ran) unless ran.empty?
-        ServicesCli.start(started) unless started.empty?
+        ServicesCli.start(start_targets, verbose: verbose) if start_targets.present?
       end
     end
   end
