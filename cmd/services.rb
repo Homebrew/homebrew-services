@@ -24,7 +24,7 @@ module Homebrew
         [`sudo`] `brew services run` (<formula>|`--all`):
         Run the service <formula> without registering to launch at login (or boot).
 
-        [`sudo`] `brew services start` (<formula>|`--all`):
+        [`sudo`] `brew services start` (<formula>|`--all`|`--file=`):
         Start the service <formula> immediately and register it to launch at login (or boot).
 
         [`sudo`] `brew services stop` (<formula>|`--all`):
@@ -39,7 +39,7 @@ module Homebrew
         [`sudo`] `brew services cleanup`:
         Remove all unused services.
       EOS
-      flag "--file=", description: "Use the plist file from this location to `start` or `run` the service."
+      flag "--file=", description: "Use the service file from this location to `start` the service."
       switch "--all", description: "Run <subcommand> on all services."
       switch "--json", description: "Output as JSON."
     end
@@ -76,6 +76,12 @@ module Homebrew
       raise UsageError, "The `#{subcommand}` subcommand does not accept a formula argument!" if formula
       raise UsageError, "The `#{subcommand}` subcommand does not accept the --all argument!" if args.all?
     end
+
+    if Service::Commands::Start::TRIGGERS.include?(subcommand) && args.all? && args.file.present?
+      raise UsageError, "The start subcommand does not accept the --all and --file= arguments at the same time!"
+    end
+
+    opoo "The --all argument overrides provided formula argument!" if formula.present? && args.all?
 
     targets = if args.all?
       Service::Formulae.available_services

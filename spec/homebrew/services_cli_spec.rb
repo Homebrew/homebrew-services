@@ -67,7 +67,7 @@ describe Service::ServicesCli do
     it "checks missing file causes error" do
       expect(Service::System).not_to receive(:root?)
       expect do
-        services_cli.start([], "/hfdkjshksdjhfkjsdhf/fdsjghsdkjhb")
+        services_cli.start(["service_name"], "/hfdkjshksdjhfkjsdhf/fdsjghsdkjhb")
       end.to raise_error UsageError, "Provided service file does not exist"
     end
 
@@ -223,6 +223,22 @@ describe Service::ServicesCli do
                          dest: OpenStruct.new(exist?: true)), enable: true
         )
       end.to output("Successfully started `name` (label: service.name)\n").to_stdout
+    end
+  end
+
+  describe "#service_restart" do
+    it "checks systemctl version" do
+      expect(Service::System).to receive(:systemctl?).once.and_return(true)
+      expect(Service::System).to receive(:systemctl_scope).once
+      described_class.service_restart(OpenStruct.new(service_name: "name"))
+    end
+
+    it "checks launchctl version" do
+      expect(Service::System).to receive(:systemctl?).once.and_return(false)
+      expect(Service::System).to receive(:launchctl?).once.and_return(true)
+      expect(Service::System).to receive(:launchctl).once
+      expect(Service::System).to receive(:domain_target).once
+      described_class.service_restart(OpenStruct.new(service_name: "name"))
     end
   end
 end

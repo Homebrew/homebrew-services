@@ -101,7 +101,7 @@ module Service
         install_service_file(service, file)
 
         if file.blank? && verbose
-          ohai "Generated plist for #{service.formula.name}:"
+          ohai "Generated service file for #{service.formula.name}:"
           puts "   #{service.dest.read.gsub("\n", "\n   ")}"
           puts
         end
@@ -109,7 +109,6 @@ module Service
         next if take_root_ownership(service).nil? && System.root?
 
         service_load(service, enable: true)
-        @service_file = nil
       end
     end
 
@@ -264,6 +263,15 @@ module Service
 
       function = enable ? "started" : "ran"
       ohai("Successfully #{function} `#{service.name}` (label: #{service.service_name})")
+    end
+
+    # Restart an already loaded service.
+    def service_restart(service)
+      if System.systemctl?
+        quiet_system System.systemctl, System.systemctl_scope, "restart", service.service_name
+      elsif System.launchctl?
+        quiet_system System.launchctl, "kickstart", "-k", "#{System.domain_target}/#{service.service_name}"
+      end
     end
 
     def install_service_file(service, file)
