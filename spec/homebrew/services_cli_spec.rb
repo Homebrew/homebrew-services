@@ -5,6 +5,8 @@ require "spec_helper"
 describe Service::ServicesCli do
   subject(:services_cli) { described_class }
 
+  let(:service_string) { "service" }
+
   describe "#bin" do
     it "outputs command name" do
       expect(services_cli.bin).to eq("brew services")
@@ -56,7 +58,7 @@ describe Service::ServicesCli do
     it "checks if target service is already running and suggests restart instead" do
       expected_output = "Service `example_service` already running," \
                         " use `brew services restart example_service` to restart.\n"
-      service = instance_double("service", name: "example_service", pid?: true)
+      service = instance_double(service_string, name: "example_service", pid?: true)
       expect do
         services_cli.run([service])
       end.to output(expected_output).to_stdout
@@ -79,7 +81,7 @@ describe Service::ServicesCli do
     it "checks if target service has already been started and suggests restart instead" do
       expected_output = "Service `example_service` already started," \
                         " use `brew services restart example_service` to restart.\n"
-      service = instance_double("service", name: "example_service", pid?: true)
+      service = instance_double(service_string, name: "example_service", pid?: true)
       expect do
         services_cli.start([service])
       end.to output(expected_output).to_stdout
@@ -101,7 +103,7 @@ describe Service::ServicesCli do
 
     it "prints a message if service is not running" do
       expected_output = "Service `example_service` is not started.\n"
-      service = instance_double("service", name: "example_service", pid?: false)
+      service = instance_double(service_string, name: "example_service", pid?: false)
       expect do
         services_cli.kill([service])
       end.to output(expected_output).to_stdout
@@ -109,7 +111,7 @@ describe Service::ServicesCli do
 
     it "prints a message if service is set to keep alive" do
       expected_output = "Service `example_service` is set to automatically restart and can't be killed.\n"
-      service = instance_double("service", name: "example_service", pid?: true, keep_alive?: true)
+      service = instance_double(service_string, name: "example_service", pid?: true, keep_alive?: true)
       expect do
         services_cli.kill([service])
       end.to output(expected_output).to_stdout
