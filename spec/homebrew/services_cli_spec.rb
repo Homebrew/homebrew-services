@@ -227,20 +227,4 @@ describe Service::ServicesCli do
       end.to output("Successfully started `name` (label: service.name)\n").to_stdout
     end
   end
-
-  describe "#service_restart" do
-    it "checks systemctl version" do
-      expect(Service::System).to receive(:systemctl?).once.and_return(true)
-      expect(Service::System).to receive(:systemctl_scope).once
-      described_class.service_restart(OpenStruct.new(service_name: "name"))
-    end
-
-    it "checks launchctl version" do
-      expect(Service::System).to receive(:systemctl?).once.and_return(false)
-      expect(Service::System).to receive(:launchctl?).once.and_return(true)
-      expect(Service::System).to receive(:launchctl).once
-      expect(Service::System).to receive(:domain_target).once
-      described_class.service_restart(OpenStruct.new(service_name: "name"))
-    end
-  end
 end
