@@ -5,6 +5,11 @@ module Service
     module Restart
       module_function
 
+      # NOTE: The restart command is used to update service files
+      # after a package gets updated through `brew upgrade`.
+      # This works by removing the old file with `brew services stop`
+      # and installing the new one with `brew services start|run`.
+
       TRIGGERS = %w[restart relaunch reload r].freeze
 
       def run(targets, custom_plist, verbose:)
@@ -12,22 +17,20 @@ module Service
 
         odeprecated "the restart command with a service file" if custom_plist.present?
 
-        start_targets = []
-
+        ran = []
+        started = []
         targets.each do |service|
-          unless service.loaded?
-            start_targets << service
-            next
-          end
-
-          if ServicesCli.service_restart(service)
-            ohai "Successfully restarted `#{service.name}` (label: #{service.service_name})"
+          if service.loaded? && !service.service_file_present?
+            ran << service
           else
-            opoo "Unable to restart `#{service.name}` (label: #{service.service_name})"
+            # group not-started services with started ones for restart
+            started << service
           end
+          ServicesCli.stop([service]) if service.loaded?
         end
 
-        ServicesCli.start(start_targets, verbose: verbose) if start_targets.present?
+        ServicesCli.run(ran) if ran.present?
+        ServicesCli.start(started) if started.present?
       end
     end
   end

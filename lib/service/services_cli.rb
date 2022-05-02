@@ -265,15 +265,6 @@ module Service
       ohai("Successfully #{function} `#{service.name}` (label: #{service.service_name})")
     end
 
-    # Restart an already loaded service.
-    def service_restart(service)
-      if System.systemctl?
-        quiet_system System.systemctl, System.systemctl_scope, "restart", service.service_name
-      elsif System.launchctl?
-        quiet_system System.launchctl, "kickstart", "-k", "#{System.domain_target}/#{service.service_name}"
-      end
-    end
-
     def install_service_file(service, file)
       odie "Formula `#{service.name}` is not installed" unless service.installed?
 

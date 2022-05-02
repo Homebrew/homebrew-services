@@ -17,19 +17,26 @@ describe Service::Commands::Restart do
     end
 
     it "starts if services are not loaded" do
+      expect(Service::ServicesCli).not_to receive(:run)
+      expect(Service::ServicesCli).not_to receive(:stop)
       expect(Service::ServicesCli).to receive(:start).once
-      expect(Service::ServicesCli).not_to receive(:service_restart)
-      service = OpenStruct.new(loaded?: false)
-
+      service = OpenStruct.new(service_name: "name", loaded?: false)
       expect(described_class.run([service], nil, verbose: false)).to be_nil
     end
 
-    it "restarts if services are loaded" do
-      expect(Service::ServicesCli).not_to receive(:start)
-      expect(Service::ServicesCli).to receive(:service_restart).once.and_return(true)
-      allow(described_class).to receive(:ohai).with(an_instance_of(String)).once
-      service = OpenStruct.new(name: "name", service_name: "service_name", loaded?: true)
+    it "starts if services are loaded with file" do
+      expect(Service::ServicesCli).not_to receive(:run)
+      expect(Service::ServicesCli).to receive(:start).once
+      expect(Service::ServicesCli).to receive(:stop).once
+      service = OpenStruct.new(service_name: "name", loaded?: true, service_file_present?: true)
+      expect(described_class.run([service], nil, verbose: false)).to be_nil
+    end
 
+    it "runs if services are loaded without file" do
+      expect(Service::ServicesCli).not_to receive(:start)
+      expect(Service::ServicesCli).to receive(:run).once
+      expect(Service::ServicesCli).to receive(:stop).once
+      service = OpenStruct.new(service_name: "name", loaded?: true, service_file_present?: false)
       expect(described_class.run([service], nil, verbose: false)).to be_nil
     end
   end
