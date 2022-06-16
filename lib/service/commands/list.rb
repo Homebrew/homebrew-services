@@ -41,7 +41,7 @@ module Service
         services = formulae.map do |formula|
           status = get_status_string(formula[:status])
           status += formula[:exit_code].to_s if formula[:status] == :error
-          file    = formula[:file].to_s.gsub(ENV["HOME"], "~").presence if formula[:loaded]
+          file    = formula[:file].to_s.gsub(Dir.home, "~").presence if formula[:loaded]
 
           { name: formula[:name], status: status, user: formula[:user], file: file }
         end

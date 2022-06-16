@@ -47,13 +47,13 @@ describe Service::System do
 
   describe "#user" do
     it "returns the current username" do
-      expect(described_class.user).to eq(ENV["USER"])
+      expect(described_class.user).to eq(ENV.fetch("USER"))
     end
   end
 
   describe "#user_of_process" do
     it "returns the username for empty PID" do
-      expect(described_class.user_of_process(nil)).to eq(ENV["USER"])
+      expect(described_class.user_of_process(nil)).to eq(ENV.fetch("USER"))
     end
 
     it "returns the PID username" do
