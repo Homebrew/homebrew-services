@@ -91,7 +91,9 @@ module Homebrew
       []
     end
 
-    ENV["DBUS_SESSION_BUS_ADDRESS"] = ENV["HOMEBREW_DBUS_SESSION_BUS_ADDRESS"] if Service::System.systemctl?
+    if Service::System.systemctl?
+      ENV["DBUS_SESSION_BUS_ADDRESS"] = ENV.fetch("HOMEBREW_DBUS_SESSION_BUS_ADDRESS", nil)
+    end
 
     # Dispatch commands and aliases.
     case subcommand.presence

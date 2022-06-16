@@ -61,9 +61,9 @@ module Service
     # Run at login.
     def user_path
       if launchctl?
-        Pathname.new("#{ENV["HOME"]}/Library/LaunchAgents")
+        Pathname.new("#{Dir.home}/Library/LaunchAgents")
       elsif systemctl?
-        Pathname.new("#{ENV["HOME"]}/.config/systemd/user")
+        Pathname.new("#{Dir.home}/.config/systemd/user")
       end
     end
 
