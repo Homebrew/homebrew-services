@@ -75,7 +75,7 @@ describe Service::System do
   describe "#domain_target" do
     it "returns the current domain target" do
       allow(described_class).to receive(:root?).and_return(false)
-      expect(described_class.domain_target).to match(%r{gui/(\d+)})
+      expect(described_class.domain_target).to match(%r{user/(\d+)})
     end
 
     it "returns the root domain target" do
