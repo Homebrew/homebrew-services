@@ -3,6 +3,9 @@ on:
   push:
     branches: master
   pull_request:
+permissions:
+  contents: read
+
 jobs:
   tap_syntax:
     runs-on: ubuntu-latest
