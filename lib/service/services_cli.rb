@@ -272,36 +272,12 @@ module Service
         odie "Formula `#{service.name}` has not implemented #plist, #service or installed a locatable service file"
       end
 
-      data = if file.blank?
+      temp = Tempfile.new(service.service_name)
+      temp << if file.blank?
         service.service_file.read
       else
         file.read
       end
-
-      if System.launchctl?
-        plist = begin
-          Plist.parse_xml(data)
-        rescue
-          nil
-        end
-        odie "Unable to parse plist for service `#{service.name}`" unless plist
-
-        # If the key is merely present then we can already skip adding it ourselves:
-        # * If somehow the plist already comes with this key by default then we won't touch it
-        # * If it exists but it's empty that *might* be on purpose, so again won't touch it
-        # * Otherwise we'll just add all known session types so the service can start regardless of what it is
-        #
-        # Adding all session types also means that if you initialise it through e.g. a Background session and you later "physically"
-        # sign in to the owning account (Aqua session), things shouldn't flip out
-        limit_sessiontype = plist["LimitLoadToSessionType"]&.first
-        unless limit_sessiontype.present?
-          plist["LimitLoadToSessionType"] = ["Aqua", "Background", "LoginWindow", "StandardIO", "System"]
-          data = plist.to_plist
-        end
-      end
-
-      temp = Tempfile.new(service.service_name)
-      temp << data
       temp.flush
 
       rm service.dest if service.dest.exist?
