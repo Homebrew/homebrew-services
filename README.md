@@ -10,6 +10,8 @@ Manage background services using the daemon manager `launchctl` on macOS or `sys
 
 `brew services` is automatically installed when first run.
 
+If `brew services` fails with `Error: Unknown command: services` run `brew tap homebrew/services` first.
+
 ## Usage
 
 See [the `brew services` section of the `brew man` output](https://docs.brew.sh/Manpage#services-subcommand) or `brew services --help`.  
