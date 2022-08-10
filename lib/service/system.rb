@@ -76,7 +76,7 @@ module Service
       if root?
         "system"
       else
-        "user/#{Process.uid}"
+        "gui/#{Process.uid}"
       end
     end
   end
