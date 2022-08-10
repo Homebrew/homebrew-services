@@ -152,7 +152,7 @@ end
 
 class Array
   def second
-    length <= 1 ? nil : self[1]
+    self[1] if length >= 2
   end
 
   def verbose?; end
