@@ -93,6 +93,7 @@ module Homebrew
 
     if Service::System.systemctl?
       ENV["DBUS_SESSION_BUS_ADDRESS"] = ENV.fetch("HOMEBREW_DBUS_SESSION_BUS_ADDRESS", nil)
+      ENV["XDG_RUNTIME_DIR"] = ENV.fetch("HOMEBREW_XDG_RUNTIME_DIR", nil)
     end
 
     # Dispatch commands and aliases.
