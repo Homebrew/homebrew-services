@@ -179,6 +179,7 @@ module Service
     # protections to avoid users editing root services
     def take_root_ownership(service)
       return unless System.root?
+      return true if System.systemctl?
 
       chown "root", "admin", service.dest
       plist_data = service.dest.read
