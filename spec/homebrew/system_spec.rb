@@ -29,7 +29,7 @@ describe Service::System do
 
     it "outputs systemctl scope for root" do
       allow(described_class).to receive(:root?).and_return(true)
-      expect(described_class.systemctl_scope).to be_nil
+      expect(described_class.systemctl_scope).to eq("--system")
     end
   end
 
