@@ -181,9 +181,10 @@ module Service
       return unless System.root?
 
       root_paths = []
-      group = "root"
 
-      if System.launchctl?
+      if System.systemctl?
+        group = "root"
+      elsif System.launchctl?
         group = "admin"
         chown "root", group, service.dest
         plist_data = service.dest.read
