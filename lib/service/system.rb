@@ -28,7 +28,7 @@ module Service
 
     # Command scope modifier
     def systemctl_scope
-      "--user" unless root?
+      root? ? "--system" : "--user"
     end
 
     # Woohoo, we are root dude!

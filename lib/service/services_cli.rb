@@ -180,40 +180,46 @@ module Service
     def take_root_ownership(service)
       return unless System.root?
 
-      chown "root", "admin", service.dest
-      plist_data = service.dest.read
-      plist = begin
-        Plist.parse_xml(plist_data)
-      rescue
-        nil
-      end
-      return unless plist
-
       root_paths = []
 
-      program_location = plist["ProgramArguments"]&.first
-      key = "first ProgramArguments value"
-      if program_location.blank?
-        program_location = plist["Program"]
-        key = "Program"
-      end
+      if System.systemctl?
+        group = "root"
+      elsif System.launchctl?
+        group = "admin"
+        chown "root", group, service.dest
+        plist_data = service.dest.read
+        plist = begin
+          Plist.parse_xml(plist_data)
+        rescue
+          nil
+        end
+        return unless plist
 
-      if program_location.present?
-        Dir.chdir("/") do
-          if File.exist?(program_location)
-            program_location_path = Pathname(program_location).realpath
-            root_paths += [
-              program_location_path,
-              program_location_path.parent.realpath,
-            ]
-          else
-            opoo <<~EOS
-              #{service.name}: the #{key} does not exist:
-                #{program_location}
-            EOS
+        program_location = plist["ProgramArguments"]&.first
+        key = "first ProgramArguments value"
+        if program_location.blank?
+          program_location = plist["Program"]
+          key = "Program"
+        end
+
+        if program_location.present?
+          Dir.chdir("/") do
+            if File.exist?(program_location)
+              program_location_path = Pathname(program_location).realpath
+              root_paths += [
+                program_location_path,
+                program_location_path.parent.realpath,
+              ]
+            else
+              opoo <<~EOS
+                #{service.name}: the #{key} does not exist:
+                  #{program_location}
+              EOS
+            end
           end
         end
       end
+
       if (formula = service.formula)
         root_paths += [
           formula.opt_prefix,
@@ -225,12 +231,12 @@ module Service
       root_paths = root_paths.sort.uniq.select(&:exist?)
 
       opoo <<~EOS
-        Taking root:admin ownership of some #{service.formula} paths:
+        Taking root:#{group} ownership of some #{service.formula} paths:
           #{root_paths.join("\n  ")}
         This will require manual removal of these paths using `sudo rm` on
         brew upgrade/reinstall/uninstall.
       EOS
-      chown "root", "admin", root_paths
+      chown "root", group, root_paths
       chmod "+t", root_paths
     end
 
