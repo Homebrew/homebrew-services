@@ -12,7 +12,7 @@ Manage background services using the daemon manager `launchctl` on macOS or `sys
 
 ## Usage
 
-See [the `brew services` section of the `brew man` output](https://docs.brew.sh/Manpage#services-subcommand) or `brew services --help`.  
+See [the `brew services` section of the `man brew` output](https://docs.brew.sh/Manpage#services-subcommand) or `brew services --help`.  
 To specify a service file use `brew services <command> <formula> --file=<file>`.
 
 
