@@ -72,9 +72,21 @@ module Service
       root? ? boot_path : user_path
     end
 
-    def domain_target
+    def domain_target_needs_background?(service)
+      plist_data = service.generate_plist(nil)
+      plist = begin
+        Plist.parse_xml(plist_data)
+      rescue
+        nil
+      end
+      !plist.nil? && !plist["LimitLoadToSessionType"].nil?
+    end
+
+    def domain_target(service)
       if root?
         "system"
+      elsif domain_target_needs_background?(service)
+        "user/#{Process.uid}"
       else
         "gui/#{Process.uid}"
       end
