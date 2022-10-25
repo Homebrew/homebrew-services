@@ -132,9 +132,12 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         plist=$(brew services info redis --verbose | grep ^File: | awk '{print $2}')
-        echo "Plist: $plist"
-        sed -i '' '/LimitLoadToSessionTypeZ/,+7d' "$plist"
-        grep -q LimitLoadToSessionType "$plist" && exit 1
+        echo "Base plist: $plist"
+        sed -i '' '/LimitLoadToSessionType/,+7d' "$plist"
         brew services start redis
+
+        plist=$(brew services info redis --verbose | grep ^File: | awk '{print $2}')
+        echo "Installed plist: $plist"
+        grep -A 7 LimitLoadToSessionType "$plist" && exit 1
         brew services stop redis
 
