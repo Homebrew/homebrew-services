@@ -133,7 +133,7 @@ jobs:
       run: |
         plist=$(brew services info redis --verbose | grep ^File: | awk '{print $2}')
         echo "Base plist: $plist"
-        sed -i '' '/LimitLoadToSessionTypeZ/,+7d' "$plist"
+        sed -i '' '/LimitLoadToSessionType/,+7d' "$plist"
         brew services start redis
 
         plist=$(brew services info redis --verbose | grep ^File: | awk '{print $2}')
