@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [master, test]
+    branches: [master]
   pull_request:
 jobs:
   tap_syntax:
