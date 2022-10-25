@@ -75,8 +75,8 @@ describe Service::System do
   describe "#domain_target" do
     let(:service) do
       OpenStruct.new(
-        name: "name",
-        installed?: true,
+        name:         "name",
+        installed?:   true,
         service_file: OpenStruct.new(file?: Pathname.new("/tmp_home/Library/LaunchAgents/homebrew.mysql.plist")),
       )
     end
