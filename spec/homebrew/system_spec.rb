@@ -73,14 +73,25 @@ describe Service::System do
   end
 
   describe "#domain_target" do
-    it "returns the current domain target" do
-      allow(described_class).to receive(:root?).and_return(false)
-      expect(described_class.domain_target).to match(%r{(?:gui|user)/(\d+)})
+    let(:service) do
+      OpenStruct.new(name: "name", installed?: true, service_file: OpenStruct.new(file?: Pathname.new("/tmp_home/Library/LaunchAgents/homebrew.mysql.plist")))
     end
 
     it "returns the root domain target" do
       allow(described_class).to receive(:root?).and_return(true)
-      expect(described_class.domain_target).to match("system")
+      expect(described_class.domain_target(service)).to match("system")
+    end
+
+    it "returns the current domain target for sessions with background support" do
+      allow(described_class).to receive(:root?).and_return(false)
+      allow(described_class).to receive(:domain_target_needs_background?).and_return(true)
+      expect(described_class.domain_target(service)).to match(%r{user/(\d+)})
+    end
+
+    it "returns the current domain target" do
+      allow(described_class).to receive(:root?).and_return(false)
+      allow(described_class).to receive(:domain_target_needs_background?).and_return(false)
+      expect(described_class.domain_target(service)).to match(%r{gui/(\d+)})
     end
   end
 

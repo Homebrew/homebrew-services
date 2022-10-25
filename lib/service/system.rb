@@ -73,13 +73,15 @@ module Service
     end
 
     def domain_target_needs_background?(service)
+      # We need to parse the current plist verbatim and the generate_plist() function already figures out where it is,
+      # so no need to pass any data ourselves
       plist_data = service.generate_plist(nil)
       plist = begin
         Plist.parse_xml(plist_data)
       rescue
         nil
       end
-      !plist.nil? && !plist["LimitLoadToSessionType"].nil?
+      plist.present? && plist["LimitLoadToSessionType"].present?
     end
 
     def domain_target(service)
