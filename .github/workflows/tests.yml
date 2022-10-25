@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: master
+    branches: [master, test]
   pull_request:
 jobs:
   tap_syntax:
@@ -127,3 +127,13 @@ jobs:
         brew services info redis | grep redis
         brew services info redis --verbose | grep redis
         brew services info redis --json | ruby -e "require 'json'" -e "puts JSON.parse(ARGF.read)"
+
+    - name: Rewrite plist to old style and recheck start/stop commands (macOS only)
+      if: matrix.os == 'macos-latest'
+      run: |
+        plist=$(brew services info redis --verbose | grep ^File: | awk '{print $2}')
+        sed -i '/LimitLoadToSessionTypeZ/,+7d' "$plist"
+        ! grep -q LimitLoadToSessionType "$plist"
+        brew services start redis
+        brew services stop redis
+
