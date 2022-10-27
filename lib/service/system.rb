@@ -74,11 +74,15 @@ module Service
 
     def domain_target_needs_background?(service)
       # We need to parse the current plist verbatim and the generate_plist() function already figures out where it is,
-      # so no need to pass any data ourselves
+      # so no need to pass any data ourselves.
       plist_data = service.generate_plist(nil)
       plist = begin
         Plist.parse_xml(plist_data)
-      rescue
+      rescue RuntimeError, UnimplementedElementError
+        # Parsing the plist could fail with a RuntimeError because it may not recognise some tags, or it handles
+        # an exception itself and returns nil instead. It could also raise an UnimplementedElementError, depending
+        # on where the error occurred.
+        # Either way, setting our fallback value to nil allows for a simple check at the end.
         nil
       end
       plist.present? && plist["LimitLoadToSessionType"].present?
