@@ -127,3 +127,17 @@ jobs:
         brew services info redis | grep redis
         brew services info redis --verbose | grep redis
         brew services info redis --json | ruby -e "require 'json'" -e "puts JSON.parse(ARGF.read)"
+
+    - name: Rewrite plist to old style and recheck start/stop commands (macOS only)
+      if: matrix.os == 'macos-latest'
+      run: |
+        plist=$(brew services info redis --verbose | grep ^File: | awk '{print $2}')
+        echo "Base plist: $plist"
+        sed -i '' '/LimitLoadToSessionType/,+7d' "$plist"
+        brew services start redis
+
+        plist=$(brew services info redis --verbose | grep ^File: | awk '{print $2}')
+        echo "Installed plist: $plist"
+        grep -A 7 LimitLoadToSessionType "$plist" && exit 1
+        brew services stop redis
+

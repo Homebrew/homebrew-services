@@ -132,12 +132,13 @@ module Service
         if System.systemctl?
           quiet_system System.systemctl, System.systemctl_scope, "disable", "--now", service.service_name
         elsif System.launchctl?
-          quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
+          domain = System.domain_target(service)
+          quiet_system System.launchctl, "bootout", "#{domain}/#{service.service_name}"
           while $CHILD_STATUS.to_i == 9216 || service.loaded?
             sleep(1)
-            quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
+            quiet_system System.launchctl, "bootout", "#{domain}/#{service.service_name}"
           end
-          quiet_system System.launchctl, "stop", "#{System.domain_target}/#{service.service_name}" if service.pid?
+          quiet_system System.launchctl, "stop", "#{domain}/#{service.service_name}" if service.pid?
         end
 
         rm service.dest if service.dest.exist?
@@ -164,7 +165,7 @@ module Service
           if System.systemctl?
             quiet_system System.systemctl, System.systemctl_scope, "stop", service.service_name
           elsif System.launchctl?
-            quiet_system System.launchctl, "stop", "#{System.domain_target}/#{service.service_name}"
+            quiet_system System.launchctl, "stop", "#{System.domain_target(service)}/#{service.service_name}"
           end
 
           if service.pid?
@@ -241,8 +242,9 @@ module Service
     end
 
     def launchctl_load(service, file:, enable:)
-      safe_system System.launchctl, "enable", "#{System.domain_target}/#{service.service_name}" if enable
-      safe_system System.launchctl, "bootstrap", System.domain_target, file
+      domain = System.domain_target(service)
+      safe_system System.launchctl, "enable", "#{domain}/#{service.service_name}" if enable
+      safe_system System.launchctl, "bootstrap", domain, file
     end
 
     def systemd_load(service, enable:)
