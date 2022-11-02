@@ -156,7 +156,7 @@ describe Service::ServicesCli do
     end
 
     it "checks enabling run" do
-      expect(Service::System).to receive(:domain_target).exactly(1).and_return("target")
+      expect(Service::System).to receive(:domain_target).exactly(2).and_return("target")
       expect(Service::System).to receive(:launchctl).exactly(2).and_return("/bin/launchctl")
       services_cli.launchctl_load(OpenStruct.new(service_name: "name"), file: "a", enable: true)
     end
