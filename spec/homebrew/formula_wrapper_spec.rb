@@ -275,7 +275,7 @@ describe Service::FormulaWrapper do
     it "returns nil if no service" do
       expect(service).to receive(:service?).once.and_return(false)
 
-      expect(service.timed?).to be(nil)
+      expect(service.timed?).to be_nil
     end
   end
 
@@ -301,7 +301,7 @@ describe Service::FormulaWrapper do
     it "returns nil if no service" do
       expect(service).to receive(:service?).once.and_return(false)
 
-      expect(service.keep_alive?).to be(nil)
+      expect(service.keep_alive?).to be_nil
     end
   end
 
