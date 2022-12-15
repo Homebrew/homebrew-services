@@ -52,10 +52,10 @@ module Service
       end
     end
 
-    # service_file delegates with formula.plist_path or formula.systemd_service_path for systemd.
+    # service_file delegates with formula.launchd_service_path or formula.systemd_service_path for systemd.
     def service_file
       @service_file ||= if System.launchctl?
-        formula.plist_path
+        formula.launchd_service_path
       elsif System.systemctl?
         formula.systemd_service_path
       end
@@ -63,7 +63,12 @@ module Service
 
     # Whether the service should be launched at startup
     def service_startup?
-      formula.plist_startup.present?
+      if service?
+        @service_startup ||= load_service.requires_root?
+        return @service_startup
+      end
+
+      @service_startup ||= formula.plist_startup.present?
     end
 
     # Path to destination service directory. If run as root, it's `boot_path`, else `user_path`.

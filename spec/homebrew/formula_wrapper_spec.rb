@@ -12,7 +12,7 @@ describe Service::FormulaWrapper do
       name:                 "mysql",
       plist_name:           "plist-mysql-test",
       service_name:         "plist-mysql-test",
-      plist_path:           Pathname.new("/usr/local/opt/mysql/homebrew.mysql.plist"),
+      launchd_service_path: Pathname.new("/usr/local/opt/mysql/homebrew.mysql.plist"),
       systemd_service_path: Pathname.new("/usr/local/opt/mysql/homebrew.mysql.service"),
     )
   end
@@ -253,12 +253,74 @@ describe Service::FormulaWrapper do
     end
   end
 
+  describe "#timed?" do
+    it "returns true if timed service" do
+      service_stub = OpenStruct.new(timed?: true)
+
+      expect(service).to receive(:service?).once.and_return(true)
+      expect(service).to receive(:load_service).once.and_return(service_stub)
+
+      expect(service.timed?).to be(true)
+    end
+
+    it "returns false if no timed service" do
+      service_stub = OpenStruct.new(timed?: false)
+
+      expect(service).to receive(:service?).once.and_return(true)
+      expect(service).to receive(:load_service).once.and_return(service_stub)
+
+      expect(service.timed?).to be(false)
+    end
+
+    it "returns nil if no service" do
+      expect(service).to receive(:service?).once.and_return(false)
+
+      expect(service.timed?).to be_nil
+    end
+  end
+
+  describe "#keep_alive?" do
+    it "returns true if service needs to stay alive" do
+      service_stub = OpenStruct.new(keep_alive?: true)
+
+      expect(service).to receive(:service?).once.and_return(true)
+      expect(service).to receive(:load_service).once.and_return(service_stub)
+
+      expect(service.keep_alive?).to be(true)
+    end
+
+    it "returns false if service does not need to stay alive" do
+      service_stub = OpenStruct.new(keep_alive?: false)
+
+      expect(service).to receive(:service?).once.and_return(true)
+      expect(service).to receive(:load_service).once.and_return(service_stub)
+
+      expect(service.keep_alive?).to be(false)
+    end
+
+    it "returns nil if no service" do
+      expect(service).to receive(:service?).once.and_return(false)
+
+      expect(service.keep_alive?).to be_nil
+    end
+  end
+
   describe "#service_startup?" do
     it "outputs false since there is no startup" do
       expect(service.service_startup?).to be(false)
     end
 
-    it "outputs true since there is a startup" do
+    it "outputs true since there is a startup service" do
+      service_stub = OpenStruct.new(requires_root?: true)
+
+      expect(service).to receive(:service?).once.and_return(true)
+      expect(service).to receive(:load_service).once.and_return(service_stub)
+
+      expect(service.service_startup?).to be(true)
+    end
+
+    it "outputs true since there is a startup plist" do
+      allow(described_class).to receive(:service?).and_return(false)
       formula = OpenStruct.new(
         plist_startup: true,
       )
