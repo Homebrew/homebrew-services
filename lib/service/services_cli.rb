@@ -23,7 +23,7 @@ module Service
                          "--no-pager",
                          "--no-legend")
       end.chomp.split("\n").map do |svc|
-        Regexp.last_match(1) if svc =~ /\s?(homebrew\.[a-z.]*)\s?/
+        Regexp.last_match(0) if svc =~ /homebrew(?>\.mxcl)?\.([\w+-.@]+)/
       end.compact
     end
 
