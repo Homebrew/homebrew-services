@@ -19,8 +19,14 @@ describe Service::ServicesCli do
       allow(Service::System).to receive(:systemctl?).and_return(false)
       allow(Utils).to receive(:popen_read).and_return <<~EOS
         77513   50  homebrew.mxcl.php
+        495     0   homebrew.mxcl.node_exporter
+        1234    34  homebrew.mxcl.postgresql@14
       EOS
-      expect(services_cli.running).to eq(["homebrew.mxcl.php"])
+      expect(services_cli.running).to eq([
+        "homebrew.mxcl.php",
+        "homebrew.mxcl.node_exporter",
+        "homebrew.mxcl.postgresql@14",
+      ])
     end
 
     it "systemD - returns the currently running services" do
