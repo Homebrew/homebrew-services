@@ -25,7 +25,7 @@ describe Service::ServicesCli do
       expect(services_cli.running).to eq([
         "homebrew.mxcl.php",
         "homebrew.mxcl.node_exporter",
-        "homebrew.mxcl.postgresql@14"
+        "homebrew.mxcl.postgresql@14",
       ])
     end
 
