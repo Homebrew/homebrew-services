@@ -40,16 +40,16 @@ module Service
       cleaned_services = []
       running.each do |label|
         if (service = FormulaWrapper.from(label))
-          unless svc.dest.file?
-            cleaned << label
-            cleaned_svcs << svc
+          unless service.dest.file?
+            cleaned_labels << label
+            cleaned_services << service
           end
         else
           opoo "Service #{label} not managed by `#{bin}` => skipping"
         end
       end
-      kill(cleaned_svcs)
-      cleaned
+      kill(cleaned_services)
+      cleaned_labels
     end
 
     def remove_unused_service_files
