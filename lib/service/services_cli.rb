@@ -36,10 +36,10 @@ module Service
 
     # Kill services that don't have a service file
     def kill_orphaned_services
-      cleaned = []
-      cleaned_svcs = []
+      cleaned_labels = []
+      cleaned_services = []
       running.each do |label|
-        if (svc = FormulaWrapper.from(label))
+        if (service = FormulaWrapper.from(label))
           unless svc.dest.file?
             cleaned << label
             cleaned_svcs << svc
