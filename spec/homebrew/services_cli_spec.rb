@@ -55,6 +55,37 @@ describe Service::ServicesCli do
     end
   end
 
+  describe "#kill_orphaned_services" do
+    it "skips unmanaged services" do
+      service = instance_double(service_string, name: "example_service")
+      allow(services_cli).to receive(:running).and_return(["example_service"])
+      allow(Service::FormulaWrapper).to receive(:from_).and_return(service)
+      expect do
+        services_cli.kill_orphaned_services
+      end.to output("Service example_service not managed by `brew services` => skipping\n").to_stdout
+    end
+
+    it "tries but is unable to kill a non existing service" do
+      service = instance_double(
+        service_string,
+        name:        "example_service",
+        pid?:        true,
+        dest:        Pathname("this_path_does_not_exist"),
+        keep_alive?: false,
+      )
+      allow(service).to receive(:service_name)
+      allow(Service::FormulaWrapper).to receive(:from).and_return(service)
+      allow(services_cli).to receive(:running).and_return(["example_service"])
+      expected_output = <<~EOS
+        Killing `example_service`... (might take a while)
+        Unable to kill `example_service` (label: )
+      EOS
+      expect do
+        services_cli.kill_orphaned_services
+      end.to output(expected_output).to_stdout
+    end
+  end
+
   describe "#run" do
     it "checks empty targets cause no error" do
       expect(Service::System).not_to receive(:root?)

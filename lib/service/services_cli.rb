@@ -36,16 +36,20 @@ module Service
 
     # Kill services that don't have a service file
     def kill_orphaned_services
-      cleaned = []
+      cleaned_labels = []
+      cleaned_services = []
       running.each do |label|
-        if (svc = FormulaWrapper.from(label))
-          cleaned << label unless svc.dest.file?
+        if (service = FormulaWrapper.from(label))
+          unless service.dest.file?
+            cleaned_labels << label
+            cleaned_services << service
+          end
         else
           opoo "Service #{label} not managed by `#{bin}` => skipping"
         end
       end
-      kill(cleaned)
-      cleaned
+      kill(cleaned_services)
+      cleaned_labels
     end
 
     def remove_unused_service_files
