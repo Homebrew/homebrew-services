@@ -190,6 +190,9 @@ module Service
       return hash unless service?
 
       service = load_service
+
+      return hash if service.command.blank?
+
       hash[:command] = service.manual_command
       hash[:working_dir] = service.working_dir
       hash[:root_dir] = service.root_dir

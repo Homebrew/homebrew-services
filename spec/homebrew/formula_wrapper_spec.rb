@@ -387,7 +387,7 @@ describe Service::FormulaWrapper do
 
     it "represents service values" do
       ENV["HOME"] = "/tmp_home"
-      service_stub = OpenStruct.new(manual_command: "/bin/cmd")
+      service_stub = OpenStruct.new(command: "/bin/cmd", manual_command: "/bin/cmd")
       allow(Service::System).to receive(:launchctl?).and_return(true)
       allow(Service::System).to receive(:systemctl?).and_return(false)
       expect(service).to receive(:service?).twice.and_return(true)
