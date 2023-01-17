@@ -7,7 +7,7 @@ jobs:
   tap_syntax:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/homebrew/ubuntu16.04:master
+      image: ghcr.io/homebrew/ubuntu22.04:master
     env:
       HOMEBREW_SIMULATE_MACOS_ON_LINUX: 1
     steps:
@@ -89,41 +89,41 @@ jobs:
 
     - name: Test start command
       run: |
-        brew install redis
-        brew services start redis
-        brew services list | grep redis
+        brew install consul
+        brew services start consul
+        brew services list | grep consul
         sleep 5
-        redis-cli INFO | grep uptime_in_seconds
-        
+        consul kv get -recurse
+
     - name: Test restart command
       run: |
-        brew services stop redis
+        brew services stop consul
         sleep 5
-        brew services run redis
-        brew services restart redis
-        brew services list | grep redis
+        brew services run consul
+        brew services restart consul
+        brew services list | grep consul
         sleep 5
-        redis-cli INFO | grep uptime_in_seconds        
+        consul kv get -recurse
 
     - name: Test stop command
       run: |
-        brew services stop redis
+        brew services stop consul
         sleep 5
-        brew services list | grep redis | grep none
+        brew services list | grep consul | grep none
 
     - name: Test run command
       run: |
-        brew services run redis
+        brew services run consul
         sleep 5
-        redis-cli INFO | grep uptime_in_seconds
-        brew services stop redis
+        consul kv get -recurse
+        brew services stop consul
 
     - name: Test list command
       run: |
-        brew services | grep redis
+        brew services | grep consul
 
     - name: Test info command
       run: |
-        brew services info redis | grep redis
-        brew services info redis --verbose | grep redis
-        brew services info redis --json | ruby -e "require 'json'" -e "puts JSON.parse(ARGF.read)"
+        brew services info consul | grep consul
+        brew services info consul --verbose | grep consul
+        brew services info consul --json | ruby -e "require 'json'" -e "puts JSON.parse(ARGF.read)"
