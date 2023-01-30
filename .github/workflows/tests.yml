@@ -89,16 +89,18 @@ jobs:
 
     - name: Test start command
       run: |
+        sudo netstat -tlpn
         brew install consul
         brew services start consul
         brew services list | grep consul
-        sleep 5
+        sleep 10
+        sudo netstat -tlpn
         consul kv get -recurse
 
     - name: Test restart command
       run: |
         brew services stop consul
-        sleep 5
+        sleep 10
         brew services run consul
         brew services restart consul
         brew services list | grep consul
@@ -108,13 +110,13 @@ jobs:
     - name: Test stop command
       run: |
         brew services stop consul
-        sleep 5
+        sleep 10
         brew services list | grep consul | grep none
 
     - name: Test run command
       run: |
         brew services run consul
-        sleep 5
+        sleep 10
         consul kv get -recurse
         brew services stop consul
 
