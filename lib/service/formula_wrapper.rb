@@ -166,7 +166,7 @@ module Service
       end.gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, "\\1#{service_name}\\2")
 
       # Always remove the "UserName" as it doesn't work since 10.11.5
-      if %r{<key>UserName</key>}.match?(data)
+      if data.include?("<key>UserName</key>")
         data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, "")
       end
 
