@@ -58,6 +58,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      HOMEBREW_NO_INSTALL_FROM_API: 1
     steps:
     - name: Enable linger
       if: matrix.os == 'ubuntu-latest'
@@ -86,6 +88,11 @@ jobs:
     - name: Install Homebrew Bundler RubyGems
       if: steps.cache.outputs.cache-hit != 'true'
       run: brew install-bundler-gems
+
+    - name: Unlink services repo
+      run: |
+        rm $(brew --repo homebrew/services)
+        cp -a $PWD $(brew --repo homebrew/services)
 
     - name: Test start command
       run: |
@@ -127,3 +134,8 @@ jobs:
         brew services info consul | grep consul
         brew services info consul --verbose | grep consul
         brew services info consul --json | ruby -e "require 'json'" -e "puts JSON.parse(ARGF.read)"
+
+    - name: Link services repo
+      run: |
+        rm -rf $(brew --repo homebrew/services)
+        ln -s $PWD $(brew --repo homebrew/services)
