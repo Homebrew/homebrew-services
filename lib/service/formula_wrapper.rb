@@ -198,6 +198,7 @@ module Service
       hash[:root_dir] = service.root_dir
       hash[:log_path] = service.log_path
       hash[:error_log_path] = service.error_log_path
+      hash[:run_at_load] = service.run_at_load
       hash[:interval] = service.interval
       hash[:cron] = service.cron
 

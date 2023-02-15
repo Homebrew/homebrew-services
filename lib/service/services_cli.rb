@@ -250,7 +250,7 @@ module Service
     end
 
     def systemd_load(service, enable:)
-      safe_system System.systemctl, System.systemctl_scope, "start", service.service_name
+      safe_system System.systemctl, System.systemctl_scope, "start", service.service_name if service.run_at_load?
       safe_system System.systemctl, System.systemctl_scope, "enable", service.service_name if enable
     end
 

@@ -47,6 +47,7 @@ module Service
         out += "Root directory: #{hash[:root_dir]}\n" unless hash[:root_dir].nil?
         out += "Log: #{hash[:log_path]}\n" unless hash[:log_path].nil?
         out += "Error log: #{hash[:error_log_path]}\n" unless hash[:error_log_path].nil?
+        out += "Run at load: #{hash[:run_at_load]}\n" unless hash[:run_at_load].nil?
         out += "Interval: #{hash[:interval]}s\n" unless hash[:interval].nil?
         out += "Cron: #{hash[:cron]}\n" unless hash[:cron].nil?
 
