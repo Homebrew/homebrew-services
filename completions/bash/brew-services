@@ -5,10 +5,20 @@
 # Called once on shell startup
 : "${HOMEBREW_PREFIX:=$(brew --prefix)}"
 
+# Find previous non-switch word
+__brewcomp_prev() {
+  local idx=$((COMP_CWORD - 1))
+  while [[ "${COMP_WORDS[idx]}" = -* ]]
+  do
+    (( idx-- ))
+  done
+  echo "${COMP_WORDS[idx]}"
+}
+
 # Complete brew services xxxxxxx
 _brew_services() {
-  local cur="${COMP_WORDS[COMP_CWORD]}"
-  local prv="$(__brewcomp_prev)"
+  local cur=${COMP_WORDS[COMP_CWORD]}
+  local prv=$(__brewcomp_prev)
   case "$prv" in
     stop|cleanup)
       # get list of agent plists, clean up with param expansion
