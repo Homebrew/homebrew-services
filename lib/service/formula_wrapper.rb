@@ -38,6 +38,11 @@ module Service
       @timed ||= (load_service.timed? if service?)
     end
 
+    # Delegate access to `formula.service.run_at_load`.
+    def run_at_load
+      @run_at_load ||= (load_service.run_at_load if service?)
+    end
+
     # Delegate access to `formula.service.keep_alive?`.`
     def keep_alive?
       @keep_alive ||= (load_service.keep_alive? if service?)

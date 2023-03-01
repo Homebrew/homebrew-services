@@ -405,6 +405,7 @@ describe Service::FormulaWrapper do
         name:           "mysql",
         pid:            nil,
         root_dir:       nil,
+        run_at_load:    nil,
         running:        false,
         schedulable:    nil,
         service_name:   "plist-mysql-test",
