@@ -175,13 +175,13 @@ describe Service::ServicesCli do
     it "checks non-enabling run" do
       expect(Service::System).to receive(:systemctl_scope).once.and_return("--user")
       expect(Service::System).to receive(:systemctl).once.and_return("/bin/launchctl")
-      services_cli.systemd_load(OpenStruct.new(service_name: "name"), enable: false)
+      services_cli.systemd_load(OpenStruct.new(service_name: "name", run_at_load: true), enable: false)
     end
 
     it "checks enabling run" do
       expect(Service::System).to receive(:systemctl_scope).exactly(2).and_return("--user")
       expect(Service::System).to receive(:systemctl).exactly(2).and_return("/bin/launchctl")
-      services_cli.systemd_load(OpenStruct.new(service_name: "name"), enable: true)
+      services_cli.systemd_load(OpenStruct.new(service_name: "name", run_at_load: true), enable: true)
     end
   end
 
@@ -231,7 +231,8 @@ describe Service::ServicesCli do
       expect(Service::System).to receive(:root?).exactly(2).and_return(false)
       expect do
         services_cli.service_load(
-          OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false), enable: false
+          OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false,
+                         run_at_load: true), enable: false
         )
       end.to output("Successfully ran `name` (label: service.name)\n").to_stdout
     end
@@ -245,7 +246,7 @@ describe Service::ServicesCli do
       expect do
         services_cli.service_load(
           OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false,
-                         dest: OpenStruct.new(exist?: true)), enable: false
+                         dest: OpenStruct.new(exist?: true), run_at_load: true), enable: false
         )
       end.to output("Successfully ran `name` (label: service.name)\n").to_stdout
     end
@@ -259,7 +260,7 @@ describe Service::ServicesCli do
       expect do
         services_cli.service_load(
           OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false,
-                         dest: OpenStruct.new(exist?: true)), enable: true
+                         dest: OpenStruct.new(exist?: true), run_at_load: true), enable: true
         )
       end.to output("Successfully started `name` (label: service.name)\n").to_stdout
     end
