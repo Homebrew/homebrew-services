@@ -13,7 +13,7 @@ module Service
 
     # Is this a launchctl system
     def launchctl?
-      launchctl.present?
+      launchctl.present? && Pathname("/Library/LaunchDaemons").exist?
     end
 
     # Path to systemctl binary.
@@ -23,7 +23,7 @@ module Service
 
     # Is this a systemd system
     def systemctl?
-      systemctl.present?
+      systemctl.present? && Pathname("/usr/lib/systemd/system").exist?
     end
 
     # Command scope modifier
