@@ -58,7 +58,7 @@ module Homebrew
     require_relative "../lib/service"
     require "utils"
 
-    if !Service::System.launchctl? && !Service::System.systemctl?
+    if !::Service::System.launchctl? && !::Service::System.systemctl?
       raise UsageError,
             "`brew services` is supported only on macOS or Linux (with systemd)!"
     end
@@ -72,48 +72,48 @@ module Homebrew
       custom_plist = args.file
     end
 
-    if [*Service::Commands::List::TRIGGERS, *Service::Commands::Cleanup::TRIGGERS].include?(subcommand)
+    if [*::Service::Commands::List::TRIGGERS, *::Service::Commands::Cleanup::TRIGGERS].include?(subcommand)
       raise UsageError, "The `#{subcommand}` subcommand does not accept a formula argument!" if formula
       raise UsageError, "The `#{subcommand}` subcommand does not accept the --all argument!" if args.all?
     end
 
-    if Service::Commands::Start::TRIGGERS.include?(subcommand) && args.all? && args.file.present?
+    if ::Service::Commands::Start::TRIGGERS.include?(subcommand) && args.all? && args.file.present?
       raise UsageError, "The start subcommand does not accept the --all and --file= arguments at the same time!"
     end
 
     opoo "The --all argument overrides provided formula argument!" if formula.present? && args.all?
 
     targets = if args.all?
-      Service::Formulae.available_services
+      ::Service::Formulae.available_services
     elsif formula
-      [Service::FormulaWrapper.new(Formulary.factory(formula))]
+      [::Service::FormulaWrapper.new(Formulary.factory(formula))]
     else
       []
     end
 
-    if Service::System.systemctl?
+    if ::Service::System.systemctl?
       ENV["DBUS_SESSION_BUS_ADDRESS"] = ENV.fetch("HOMEBREW_DBUS_SESSION_BUS_ADDRESS", nil)
       ENV["XDG_RUNTIME_DIR"] = ENV.fetch("HOMEBREW_XDG_RUNTIME_DIR", nil)
     end
 
     # Dispatch commands and aliases.
     case subcommand.presence
-    when *Service::Commands::List::TRIGGERS
-      Service::Commands::List.run(json: args.json?)
-    when *Service::Commands::Cleanup::TRIGGERS
-      Service::Commands::Cleanup.run
-    when *Service::Commands::Info::TRIGGERS
-      Service::Commands::Info.run(targets, verbose: args.verbose?, json: args.json?)
-    when *Service::Commands::Restart::TRIGGERS
-      Service::Commands::Restart.run(targets, custom_plist, verbose: args.verbose?)
-    when *Service::Commands::Run::TRIGGERS
-      Service::Commands::Run.run(targets, verbose: args.verbose?)
-    when *Service::Commands::Start::TRIGGERS
-      Service::Commands::Start.run(targets, custom_plist, verbose: args.verbose?)
-    when *Service::Commands::Stop::TRIGGERS
-      Service::Commands::Stop.run(targets, verbose: args.verbose?)
-    when *Service::Commands::Kill::TRIGGERS
-      Service::Commands::Kill.run(targets, verbose: args.verbose?)
+    when *::Service::Commands::List::TRIGGERS
+      ::Service::Commands::List.run(json: args.json?)
+    when *::Service::Commands::Cleanup::TRIGGERS
+      ::Service::Commands::Cleanup.run
+    when *::Service::Commands::Info::TRIGGERS
+      ::Service::Commands::Info.run(targets, verbose: args.verbose?, json: args.json?)
+    when *::Service::Commands::Restart::TRIGGERS
+      ::Service::Commands::Restart.run(targets, custom_plist, verbose: args.verbose?)
+    when *::Service::Commands::Run::TRIGGERS
+      ::Service::Commands::Run.run(targets, verbose: args.verbose?)
+    when *::Service::Commands::Start::TRIGGERS
+      ::Service::Commands::Start.run(targets, custom_plist, verbose: args.verbose?)
+    when *::Service::Commands::Stop::TRIGGERS
+      ::Service::Commands::Stop.run(targets, verbose: args.verbose?)
+    when *::Service::Commands::Kill::TRIGGERS
+      ::Service::Commands::Kill.run(targets, verbose: args.verbose?)
     else
       raise UsageError, "unknown subcommand: `#{subcommand}`"
     end
