@@ -1,4 +1,4 @@
-#compdef brew
+#compdef 'brew services'
 #autoload
 
 __brew_installed_services() {
