@@ -150,29 +150,6 @@ module Service
       return Regexp.last_match(1).to_i if status =~ exit_code_regex
     end
 
-    # Generate that plist file, dude.
-    def generate_plist(data = nil)
-      data ||= service_file.file? ? service_file : formula.plist
-
-      if data.respond_to?(:file?) && data.file?
-        data = data.read
-      elsif !data
-        odie "Could not read the plist for `#{name}`!"
-      end
-
-      # Replace "template" variables and ensure label is always, always #service_name
-      data = data.to_s.gsub(/\{\{([a-z][a-z0-9_]*)\}\}/i) do |_|
-        formula.send(Regexp.last_match(1)).to_s if formula.respond_to?(Regexp.last_match(1))
-      end.gsub(%r{(<key>Label</key>\s*<string>)[^<]*(</string>)}, "\\1#{service_name}\\2")
-
-      # Always remove the "UserName" as it doesn't work since 10.11.5
-      if data.include?("<key>UserName</key>")
-        data = data.gsub(%r{(<key>UserName</key>\s*<string>)[^<]*(</string>)}, "")
-      end
-
-      data
-    end
-
     def to_hash
       hash = {
         name:         name,
