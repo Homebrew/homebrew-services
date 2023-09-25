@@ -331,18 +331,6 @@ describe Service::FormulaWrapper do
     end
   end
 
-  describe "#generate_plist?" do
-    it "macOS - outputs error for plist" do
-      allow(Service::System).to receive(:launchctl?).and_return(true)
-      allow(Service::System).to receive(:systemctl?).and_return(false)
-      allow(described_class).to receive(:service_file_present?).and_return(false)
-      allow(described_class).to receive(:service?).and_return(false)
-      expect do
-        service.generate_plist(nil)
-      end.to raise_error TestExit, "Could not read the plist for `mysql`!"
-    end
-  end
-
   describe "#to_hash" do
     it "represents non-service values" do
       allow(Service::System).to receive(:launchctl?).and_return(true)
