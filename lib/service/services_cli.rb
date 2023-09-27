@@ -6,6 +6,14 @@ module Service
 
     module_function
 
+    def sudo_service_user
+      @sudo_service_user
+    end
+
+    def sudo_service_user=(sudo_service_user)
+      @sudo_service_user = sudo_service_user
+    end
+
     # Binary name.
     def bin
       "brew services"
@@ -183,6 +191,7 @@ module Service
     # protections to avoid users editing root services
     def take_root_ownership(service)
       return unless System.root?
+      return if sudo_service_user
 
       root_paths = []
 
@@ -284,7 +293,22 @@ module Service
 
       temp = Tempfile.new(service.service_name)
       temp << if file.blank?
-        service.service_file.read
+        contents = service.service_file.read
+
+        if sudo_service_user && System.launchctl?
+          require "rexml/document"
+
+          # set the username in the new plist file
+          ohai "Setting username in #{service.service_name} to #{System.user}"
+          plist = REXML::Document.new(contents)
+          dict_element = REXML::XPath.first(plist, "/plist/dict/")
+          dict_element.add_element("key").text = "UserName"
+          dict_element.add_element("string").text = sudo_service_user
+
+          plist.to_s
+        else
+          contents
+        end
       else
         file.read
       end
