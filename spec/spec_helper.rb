@@ -137,6 +137,8 @@ module Service
     def odie(string)
       raise TestExit, string
     end
+
+    def odebug(header, string); end
   end
 
   module Commands

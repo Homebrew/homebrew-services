@@ -119,14 +119,14 @@ describe Service::FormulaWrapper do
     it "macOS - outputs if the service is loaded" do
       allow(Service::System).to receive(:launchctl?).and_return(true)
       allow(Service::System).to receive(:systemctl?).and_return(false)
-      allow(service).to receive(:quiet_system).and_return(false)
+      allow(Utils).to receive(:safe_popen_read)
       expect(service.loaded?).to be(false)
     end
 
     it "systemD - outputs if the service is loaded" do
       allow(Service::System).to receive(:launchctl?).and_return(false)
       allow(Service::System).to receive(:systemctl?).and_return(true)
-      allow(service).to receive(:quiet_system).and_return(false)
+      allow(Utils).to receive(:safe_popen_read)
       expect(service.loaded?).to be(false)
     end
 

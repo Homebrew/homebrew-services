@@ -9,7 +9,10 @@ module Service
     def available_services
       require "formula"
 
-      Formula.installed.map { |formula| FormulaWrapper.new(formula) }.select(&:plist?).sort_by(&:name)
+      Formula.installed
+             .map { |formula| FormulaWrapper.new(formula) }
+             .select(&:service?)
+             .sort_by(&:name)
     end
 
     # List all available services with status, user, and path to the file.

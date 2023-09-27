@@ -129,7 +129,7 @@ describe Service::Commands::List do
     end
 
     it "returns other" do
-      expect(described_class.get_status_string(:other)).to be_nil
+      expect(described_class.get_status_string(:other)).to eq("<YELLOW>other<RESET>")
     end
   end
 end

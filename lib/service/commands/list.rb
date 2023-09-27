@@ -73,6 +73,7 @@ module Service
         when :stopped, :none then "#{Tty.default}#{status}#{Tty.reset}"
         when :error   then "#{Tty.red}error  #{Tty.reset}"
         when :unknown then "#{Tty.yellow}unknown#{Tty.reset}"
+        when :other then "#{Tty.yellow}other#{Tty.reset}"
         end
       end
     end
