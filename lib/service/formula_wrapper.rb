@@ -98,12 +98,13 @@ module Service
     end
 
     # Returns `true` if the service is loaded, else false.
-    def loaded?
+    def loaded?(cached: false)
       if System.launchctl?
-        # TODO: find replacement for deprecated "list"
-        quiet_system System.launchctl, "list", service_name
+        @status_output_success_type = nil unless cached
+        _, status_success, = status_output_success_type
+        status_success
       elsif System.systemctl?
-        quiet_system System.systemctl, System.systemctl_scope, "status", service_file.basename
+        quiet_system(*System.systemctl_args, "status", service_file.basename)
       end
     end
 
@@ -137,17 +138,19 @@ module Service
     end
 
     def unknown_status?
-      status.blank? && !pid?
+      status_output.blank? && !pid?
     end
 
     # Get current PID of daemon process from status output.
     def pid
-      return Regexp.last_match(1).to_i if status =~ pid_regex
+      status_output, _, status_type = status_output_success_type
+      return Regexp.last_match(1).to_i if status_output =~ pid_regex(status_type)
     end
 
     # Get current exit code of daemon process from status output.
     def exit_code
-      return Regexp.last_match(1).to_i if status =~ exit_code_regex
+      status_output, _, status_type = status_output_success_type
+      return Regexp.last_match(1).to_i if status_output =~ exit_code_regex(status_type)
     end
 
     def to_hash
@@ -155,12 +158,12 @@ module Service
         name:         name,
         service_name: service_name,
         running:      pid?,
-        loaded:       loaded?,
+        loaded:       loaded?(cached: true),
         schedulable:  timed?,
         pid:          pid,
         exit_code:    exit_code,
         user:         owner,
-        status:       operational_status,
+        status:       status_symbol,
         file:         service_file_present? ? dest : service_file,
       }
 
@@ -192,10 +195,39 @@ module Service
       formula.service
     end
 
-    def operational_status
+    def status_output_success_type
+      @status_output_success_type ||= if System.launchctl?
+        cmd = [System.launchctl.to_s, "list", service_name]
+        output = Utils.popen_read(*cmd).chomp
+        if $CHILD_STATUS.present? && $CHILD_STATUS.success? && output.present?
+          success = true
+          odebug cmd.join(" "), output
+          [output, success, :launchctl_list]
+        else
+          cmd = [System.launchctl.to_s, "print", "#{System.domain_target}/#{service_name}"]
+          output = Utils.popen_read(*cmd).chomp
+          success = $CHILD_STATUS.present? && $CHILD_STATUS.success? && output.present?
+          odebug cmd.join(" "), output
+          [output, success, :launchctl_print]
+        end
+      elsif System.systemctl?
+        cmd = [*System.systemctl_args, "status", service_name]
+        output = Utils.popen_read(*cmd).chomp
+        success = $CHILD_STATUS.present? && $CHILD_STATUS.success? && output.present?
+        odebug cmd.join(" "), output
+        [output, success, :systemctl]
+      end
+    end
+
+    def status_output
+      status_output, = status_output_success_type
+      status_output
+    end
+
+    def status_symbol
       if pid?
         :started
-      elsif !loaded?
+      elsif !loaded?(cached: true)
         :none
       elsif exit_code.present? && exit_code.zero?
         if timed?
@@ -212,29 +244,22 @@ module Service
       end
     end
 
-    def status
-      @status ||= if System.launchctl?
-        Utils.popen_read(System.launchctl, "list", service_name).chomp
-      elsif System.systemctl?
-        Utils.popen_read(System.systemctl.to_s, System.systemctl_scope.to_s, "status",
-                         service_name.to_s).chomp
-      end
+    def exit_code_regex(status_type)
+      @exit_code_regex ||= {
+        launchctl_list:  /"LastExitStatus"\ =\ ([0-9]*);/,
+        launchctl_print: /last exit code = ([0-9]+)/,
+        systemctl:       /\(code=exited, status=([0-9]*)\)|\(dead\)/,
+      }
+      @exit_code_regex.fetch(status_type)
     end
 
-    def exit_code_regex
-      if System.launchctl?
-        /"LastExitStatus"\ =\ ([0-9]*);/
-      elsif System.systemctl?
-        /\(code=exited, status=([0-9]*)\)|\(dead\)/
-      end
-    end
-
-    def pid_regex
-      if System.launchctl?
-        /"PID"\ =\ ([0-9]*);/
-      elsif System.systemctl?
-        /Main PID: ([0-9]*) \((?!code=)/
-      end
+    def pid_regex(status_type)
+      @pid_regex ||= {
+        launchctl_list:  /"PID"\ =\ ([0-9]*);/,
+        launchctl_print: /pid = ([0-9]+)/,
+        systemctl:       /Main PID: ([0-9]*) \((?!code=)/,
+      }
+      @pid_regex.fetch(status_type)
     end
 
     def boot_path_service_file_present?

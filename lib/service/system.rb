@@ -31,6 +31,11 @@ module Service
       root? ? "--system" : "--user"
     end
 
+    # Arguments to run systemctl.
+    def systemctl_args
+      @systemctl_args ||= [systemctl, systemctl_scope]
+    end
+
     # Woohoo, we are root dude!
     def root?
       Process.uid.zero?
@@ -75,6 +80,20 @@ module Service
     def domain_target
       if root?
         "system"
+      elsif (ssh_tty = ENV.fetch("HOMEBREW_SSH_TTY", nil).present?) || ENV.fetch("HOMEBREW_SUDO_USER", nil).present?
+        if @output_warning.blank? && ENV.fetch("HOMEBREW_SERVICES_NO_DOMAIN_WARNING", nil).blank?
+          if ssh_tty
+            opoo "running over SSH, using user/* instead of gui/* domain!"
+          else
+            opoo "running through sudo, using user/* instead of gui/* domain!"
+          end
+          unless Homebrew::EnvConfig.no_env_hints?
+            puts "Hide this warning by setting HOMEBREW_SERVICES_NO_DOMAIN_WARNING."
+            puts "Hide these hints with HOMEBREW_NO_ENV_HINTS (see `man brew`)."
+          end
+          @output_warning = true
+        end
+        "user/#{Process.uid}"
       else
         "gui/#{Process.uid}"
       end

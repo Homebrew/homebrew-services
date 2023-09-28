@@ -10,13 +10,15 @@ module Homebrew
       usage_banner <<~EOS
         `services` [<subcommand>]
 
-        Manage background services with macOS' `launchctl`(1) daemon manager.
+        Manage background services with macOS' `launchctl`(1) daemon manager or
+        Linux's `systemctl`(1) service manager.
 
-        If `sudo` is passed, operate on `/Library/LaunchDaemons` (started at boot).
-        Otherwise, operate on `~/Library/LaunchAgents` (started at login).
+        If `sudo` is passed, operate on `/Library/LaunchDaemons`/`/usr/lib/systemd/system`  (started at boot).
+        Otherwise, operate on `~/Library/LaunchAgents`/`~/.config/systemd/user` (started at login).
 
-        [`sudo`] `brew services` [`list`] (`--json`):
+        [`sudo`] `brew services` [`list`] (`--json`) (`--debug`):
         List information about all managed services for the current user (or root).
+        Provides more output from Homebrew and `launchctl`(1) or `systemctl`(1) if run with `--debug`.
 
         [`sudo`] `brew services info` (<formula>|`--all`|`--json`):
         List all managed services for the current user (or root).
@@ -42,6 +44,7 @@ module Homebrew
       flag "--file=", description: "Use the service file from this location to `start` the service."
       switch "--all", description: "Run <subcommand> on all services."
       switch "--json", description: "Output as JSON."
+      named_args max: 2
     end
   end
 
@@ -64,13 +67,7 @@ module Homebrew
     end
 
     # Parse arguments.
-    subcommand, formula, custom_plist, = args.named
-
-    if custom_plist.present?
-      odeprecated "with file as last argument", "`--file=` to specify a plist file"
-    else
-      custom_plist = args.file
-    end
+    subcommand, formula, = args.named
 
     if [*::Service::Commands::List::TRIGGERS, *::Service::Commands::Cleanup::TRIGGERS].include?(subcommand)
       raise UsageError, "The `#{subcommand}` subcommand does not accept a formula argument!" if formula
@@ -105,11 +102,11 @@ module Homebrew
     when *::Service::Commands::Info::TRIGGERS
       ::Service::Commands::Info.run(targets, verbose: args.verbose?, json: args.json?)
     when *::Service::Commands::Restart::TRIGGERS
-      ::Service::Commands::Restart.run(targets, custom_plist, verbose: args.verbose?)
+      ::Service::Commands::Restart.run(targets, args.file, verbose: args.verbose?)
     when *::Service::Commands::Run::TRIGGERS
       ::Service::Commands::Run.run(targets, verbose: args.verbose?)
     when *::Service::Commands::Start::TRIGGERS
-      ::Service::Commands::Start.run(targets, custom_plist, verbose: args.verbose?)
+      ::Service::Commands::Start.run(targets, args.file, verbose: args.verbose?)
     when *::Service::Commands::Stop::TRIGGERS
       ::Service::Commands::Stop.run(targets, verbose: args.verbose?)
     when *::Service::Commands::Kill::TRIGGERS

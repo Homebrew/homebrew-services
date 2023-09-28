@@ -173,14 +173,12 @@ describe Service::ServicesCli do
 
   describe "#systemd_load" do
     it "checks non-enabling run" do
-      expect(Service::System).to receive(:systemctl_scope).once.and_return("--user")
-      expect(Service::System).to receive(:systemctl).once.and_return("/bin/launchctl")
+      expect(Service::System).to receive(:systemctl_args).once.and_return(["/bin/launchctl", "--user"])
       services_cli.systemd_load(OpenStruct.new(service_name: "name"), enable: false)
     end
 
     it "checks enabling run" do
-      expect(Service::System).to receive(:systemctl_scope).exactly(2).and_return("--user")
-      expect(Service::System).to receive(:systemctl).exactly(2).and_return("/bin/launchctl")
+      expect(Service::System).to receive(:systemctl_args).twice.and_return(["/bin/launchctl", "--user"])
       services_cli.systemd_load(OpenStruct.new(service_name: "name"), enable: true)
     end
   end
@@ -193,8 +191,8 @@ describe Service::ServicesCli do
     end
 
     it "checks enabling run" do
-      expect(Service::System).to receive(:domain_target).exactly(2).and_return("target")
-      expect(Service::System).to receive(:launchctl).exactly(2).and_return("/bin/launchctl")
+      expect(Service::System).to receive(:domain_target).twice.and_return("target")
+      expect(Service::System).to receive(:launchctl).twice.and_return("/bin/launchctl")
       services_cli.launchctl_load(OpenStruct.new(service_name: "name"), file: "a", enable: true)
     end
   end
@@ -215,7 +213,7 @@ describe Service::ServicesCli do
     it "checks root for startup" do
       expect(Service::System).to receive(:launchctl?).once.and_return(false)
       expect(Service::System).to receive(:systemctl?).once.and_return(false)
-      expect(Service::System).to receive(:root?).exactly(2).and_return(false)
+      expect(Service::System).to receive(:root?).twice.and_return(false)
       out = "name must be run as root to start at system startup!\nSuccessfully ran `name` (label: service.name)\n"
       expect do
         services_cli.service_load(OpenStruct.new(name: "name", service_name: "service.name", service_startup?: true),
@@ -228,7 +226,7 @@ describe Service::ServicesCli do
       expect(Service::System).to receive(:launchctl?).once.and_return(true)
       expect(Service::System).to receive(:launchctl).once
       expect(Service::System).not_to receive(:systemctl?)
-      expect(Service::System).to receive(:root?).exactly(2).and_return(false)
+      expect(Service::System).to receive(:root?).twice.and_return(false)
       expect do
         services_cli.service_load(
           OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false), enable: false
@@ -239,9 +237,8 @@ describe Service::ServicesCli do
     it "triggers systemctl" do
       expect(Service::System).to receive(:launchctl?).once.and_return(false)
       expect(Service::System).to receive(:systemctl?).once.and_return(true)
-      expect(Service::System).to receive(:systemctl).once
-      expect(Service::System).to receive(:systemctl_scope).once
-      expect(Service::System).to receive(:root?).exactly(2).and_return(false)
+      expect(Service::System).to receive(:systemctl_args).once
+      expect(Service::System).to receive(:root?).twice.and_return(false)
       expect do
         services_cli.service_load(
           OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false,
@@ -253,9 +250,8 @@ describe Service::ServicesCli do
     it "represents correct action" do
       expect(Service::System).to receive(:launchctl?).once.and_return(false)
       expect(Service::System).to receive(:systemctl?).once.and_return(true)
-      expect(Service::System).to receive(:systemctl).exactly(2)
-      expect(Service::System).to receive(:systemctl_scope).exactly(2)
-      expect(Service::System).to receive(:root?).exactly(2).and_return(false)
+      expect(Service::System).to receive(:systemctl_args).twice
+      expect(Service::System).to receive(:root?).twice.and_return(false)
       expect do
         services_cli.service_load(
           OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false,

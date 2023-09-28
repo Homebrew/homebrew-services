@@ -14,10 +14,9 @@ module Service
     # Find all currently running services via launchctl list or systemctl list-units.
     def running
       if System.launchctl?
-        # TODO: find replacement for deprecated "list"
-        Utils.popen_read("#{System.launchctl} list | grep homebrew")
+        Utils.popen_read(System.launchctl, "list")
       else
-        Utils.popen_read(System.systemctl, System.systemctl_scope, "list-units",
+        Utils.popen_read(*System.systemctl_args, "list-units",
                          "--type=service",
                          "--state=running",
                          "--no-pager",
@@ -126,6 +125,9 @@ module Service
               Service `#{service.name}` is started as `#{service.owner}`. Try:
                 #{"sudo " unless System.root?}#{bin} stop #{service.name}
             EOS
+          elsif System.launchctl? &&
+                quiet_system(System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}")
+            ohai "Successfully stopped `#{service.name}` (label: #{service.service_name})"
           else
             opoo "Service `#{service.name}` is not started."
           end
@@ -134,7 +136,7 @@ module Service
 
         puts "Stopping `#{service.name}`... (might take a while)"
         if System.systemctl?
-          quiet_system System.systemctl, System.systemctl_scope, "disable", "--now", service.service_name
+          quiet_system(*System.systemctl_args, "disable", "--now", service.service_name)
         elsif System.launchctl?
           quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
           while $CHILD_STATUS.to_i == 9216 || service.loaded?
@@ -146,7 +148,7 @@ module Service
 
         rm service.dest if service.dest.exist?
         # Run daemon-reload on systemctl to finish unloading stopped and deleted service.
-        safe_system System.systemctl, System.systemctl_scope, "daemon-reload" if System.systemctl?
+        safe_system(*System.systemctl_args, "daemon-reload") if System.systemctl?
 
         if service.pid? || service.loaded?
           opoo "Unable to stop `#{service.name}` (label: #{service.service_name})"
@@ -166,7 +168,7 @@ module Service
         else
           puts "Killing `#{service.name}`... (might take a while)"
           if System.systemctl?
-            quiet_system System.systemctl, System.systemctl_scope, "stop", service.service_name
+            quiet_system(*System.systemctl_args, "stop", service.service_name)
           elsif System.launchctl?
             quiet_system System.launchctl, "stop", "#{System.domain_target}/#{service.service_name}"
           end
@@ -250,8 +252,8 @@ module Service
     end
 
     def systemd_load(service, enable:)
-      safe_system System.systemctl, System.systemctl_scope, "start", service.service_name
-      safe_system System.systemctl, System.systemctl_scope, "enable", service.service_name if enable
+      safe_system(*System.systemctl_args, "start", service.service_name)
+      safe_system(*System.systemctl_args, "enable", service.service_name) if enable
     end
 
     def service_load(service, enable:)
@@ -299,7 +301,7 @@ module Service
 
       chmod 0644, service.dest
 
-      safe_system System.systemctl, System.systemctl_scope, "daemon-reload" if System.systemctl?
+      safe_system(*System.systemctl_args, "daemon-reload") if System.systemctl?
     end
   end
 end
