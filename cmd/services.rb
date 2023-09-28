@@ -42,6 +42,7 @@ module Homebrew
         Remove all unused services.
       EOS
       flag "--file=", description: "Use the service file from this location to `start` the service."
+      flag "--sudo-service-user=", description: "When run as root on macOS, run the service(s) as this user."
       switch "--all", description: "Run <subcommand> on all services."
       switch "--json", description: "Output as JSON."
       named_args max: 2
@@ -64,6 +65,21 @@ module Homebrew
     if !::Service::System.launchctl? && !::Service::System.systemctl?
       raise UsageError,
             "`brew services` is supported only on macOS or Linux (with systemd)!"
+    end
+
+    if (sudo_service_user = args.sudo_service_user)
+      unless ::Service::System.root?
+        raise UsageError,
+              "`brew services` is supported only when running as root!"
+      end
+
+      unless ::Service::System.launchctl?
+        raise UsageError,
+              "`brew services --sudo-service-user` is currently supported only on macOS " \
+              "(but we'd love a PR to add Linux support)!"
+      end
+
+      ::Service::ServicesCli.sudo_service_user = sudo_service_user
     end
 
     # Parse arguments.

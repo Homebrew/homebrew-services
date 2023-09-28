@@ -121,6 +121,16 @@ module Service
     end
 
     def owner
+      if System.launchctl? && dest.exist?
+        require "rexml/document"
+
+        # read the username from the plist file
+        plist = REXML::Document.new(dest.read)
+        username_xpath = "/plist/dict/key[text()='UserName']/following-sibling::*[1]"
+        plist_username = REXML::XPath.first(plist, username_xpath)&.text
+
+        return plist_username if plist_username.present?
+      end
       return "root" if boot_path_service_file_present?
       return System.user if user_path_service_file_present?
 
