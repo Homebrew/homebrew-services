@@ -11,7 +11,7 @@ module Service
 
       Formula.installed
              .map { |formula| FormulaWrapper.new(formula) }
-             .select(&:service?)
+             .select { |formula| formula.service? || formula.plist? }
              .sort_by(&:name)
     end
 
