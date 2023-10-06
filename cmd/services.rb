@@ -45,6 +45,7 @@ module Homebrew
       flag "--sudo-service-user=", description: "When run as root on macOS, run the service(s) as this user."
       switch "--all", description: "Run <subcommand> on all services."
       switch "--json", description: "Output as JSON."
+      switch "--no-wait", description: "Don't wait for `stop` to finish stopping the service."
       named_args max: 2
     end
   end
@@ -124,7 +125,7 @@ module Homebrew
     when *::Service::Commands::Start::TRIGGERS
       ::Service::Commands::Start.run(targets, args.file, verbose: args.verbose?)
     when *::Service::Commands::Stop::TRIGGERS
-      ::Service::Commands::Stop.run(targets, verbose: args.verbose?)
+      ::Service::Commands::Stop.run(targets, verbose: args.verbose?, no_wait: args.no_wait?)
     when *::Service::Commands::Kill::TRIGGERS
       ::Service::Commands::Kill.run(targets, verbose: args.verbose?)
     else

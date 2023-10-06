@@ -7,9 +7,9 @@ module Service
 
       TRIGGERS = %w[stop unload terminate term t u].freeze
 
-      def run(targets, verbose:)
+      def run(targets, verbose:, no_wait:)
         ServicesCli.check(targets) &&
-          ServicesCli.stop(targets, verbose: verbose)
+          ServicesCli.stop(targets, verbose: verbose, no_wait: no_wait)
       end
     end
   end
