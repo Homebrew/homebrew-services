@@ -4,6 +4,8 @@
 # generating the service/plist files.
 module Service
   class FormulaWrapper
+    include SystemCommand::Mixin
+
     # Access the `Formula` instance.
     attr_reader :formula
 
@@ -207,24 +209,23 @@ module Service
 
     def status_output_success_type
       @status_output_success_type ||= if System.launchctl?
-        cmd = [System.launchctl.to_s, "list", service_name]
-        output = Utils.popen_read(*cmd).chomp
-        if $CHILD_STATUS.present? && $CHILD_STATUS.success? && output.present?
+        result = system_command(System.launchctl.to_s, args: ["list", service_name])
+        output = result.stdout.chomp
+
+        if result.success? && output.present?
           success = true
-          odebug cmd.join(" "), output
           [output, success, :launchctl_list]
         else
-          cmd = [System.launchctl.to_s, "print", "#{System.domain_target}/#{service_name}"]
-          output = Utils.popen_read(*cmd).chomp
-          success = $CHILD_STATUS.present? && $CHILD_STATUS.success? && output.present?
-          odebug cmd.join(" "), output
+          result = system_command(System.launchctl.to_s, args: ["print", "#{System.domain_target}/#{service_name}"])
+          output = result.stdout.chomp
+          success = result.success? && output.present?
           [output, success, :launchctl_print]
         end
       elsif System.systemctl?
-        cmd = [*System.systemctl_args, "status", service_name]
-        output = Utils.popen_read(*cmd).chomp
-        success = $CHILD_STATUS.present? && $CHILD_STATUS.success? && output.present?
-        odebug cmd.join(" "), output
+        executable, *args = [*System.systemctl_args, "status", service_name]
+        result = system_command(executable, args: args)
+        output = result.stdout.chomp
+        success = result.success? && output.present?
         [output, success, :systemctl]
       end
     end

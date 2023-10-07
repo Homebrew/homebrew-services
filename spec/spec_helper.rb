@@ -9,6 +9,8 @@ end
 
 require "active_support/core_ext/string"
 
+require "stub/system_command"
+
 PROJECT_ROOT = Pathname(__dir__).parent.freeze
 Dir.glob("#{PROJECT_ROOT}/lib/**/*.rb").sort.each do |file|
   require file
@@ -137,8 +139,6 @@ module Service
     def odie(string)
       raise TestExit, string
     end
-
-    def odebug(header, string); end
   end
 
   module Commands

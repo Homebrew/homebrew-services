@@ -3,6 +3,7 @@
 module Service
   module ServicesCli
     extend FileUtils
+    extend SystemCommand::Mixin
 
     module_function
 
@@ -21,17 +22,23 @@ module Service
 
     # Find all currently running services via launchctl list or systemctl list-units.
     def running
-      if System.launchctl?
-        Utils.popen_read(System.launchctl, "list")
+      result = if System.launchctl?
+        system_command(System.launchctl, args: ["list"])
       else
-        Utils.popen_read(*System.systemctl_args, "list-units",
-                         "--type=service",
-                         "--state=running",
-                         "--no-pager",
-                         "--no-legend")
-      end.chomp.split("\n").map do |svc|
-        Regexp.last_match(0) if svc =~ /homebrew(?>\.mxcl)?\.([\w+-.@]+)/
-      end.compact
+        executable, *args = [
+          *System.systemctl_args, "list-units",
+                                   "--type=service",
+                                   "--state=running",
+                                   "--no-pager",
+                                   "--no-legend"
+        ]
+        system_command(executable, args: args)
+      end
+
+      result.stdout.chomp
+            .split("\n")
+            .map { |svc| svc[/(homebrew(?>\.mxcl)?\.(?:[\w+-.@]+))/, 1] }
+            .compact
     end
 
     # Check if formula has been found.
