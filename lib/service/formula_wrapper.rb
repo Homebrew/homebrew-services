@@ -209,14 +209,22 @@ module Service
 
     def status_output_success_type
       @status_output_success_type ||= if System.launchctl?
-        result = system_command(System.launchctl.to_s, args: ["list", service_name])
+        result = system_command(
+          System.launchctl.to_s,
+          args:         ["list", service_name],
+          print_stderr: false,
+        )
         output = result.stdout.chomp
 
         if result.success? && output.present?
           success = true
           [output, success, :launchctl_list]
         else
-          result = system_command(System.launchctl.to_s, args: ["print", "#{System.domain_target}/#{service_name}"])
+          result = system_command(
+            System.launchctl.to_s,
+            args:         ["print", "#{System.domain_target}/#{service_name}"],
+            print_stderr: false,
+          )
           output = result.stdout.chomp
           success = result.success? && output.present?
           [output, success, :launchctl_print]

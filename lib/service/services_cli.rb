@@ -23,7 +23,7 @@ module Service
     # Find all currently running services via launchctl list or systemctl list-units.
     def running
       result = if System.launchctl?
-        system_command(System.launchctl, args: ["list"])
+        system_command(System.launchctl, args: ["list"], print_stderr: false)
       else
         executable, *args = [
           *System.systemctl_args, "list-units",
@@ -32,7 +32,7 @@ module Service
                                    "--no-pager",
                                    "--no-legend"
         ]
-        system_command(executable, args: args)
+        system_command(executable, args: args, print_stderr: false)
       end
 
       result.stdout.chomp
