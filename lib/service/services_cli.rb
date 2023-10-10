@@ -151,7 +151,7 @@ module Service
         end
 
         if System.systemctl?
-          quiet_system(*System.systemctl_args, "disable", "--now", service.service_name)
+          quiet_system(*systemctl_args, "disable", "--now", service.service_name)
         elsif System.launchctl?
           quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
           unless no_wait
@@ -165,7 +165,7 @@ module Service
 
         rm service.dest if service.dest.exist?
         # Run daemon-reload on systemctl to finish unloading stopped and deleted service.
-        safe_system(*System.systemctl_args, "daemon-reload") if System.systemctl?
+        safe_system(*systemctl_args, "daemon-reload") if System.systemctl?
 
         if service.pid? || service.loaded?
           opoo "Unable to stop `#{service.name}` (label: #{service.service_name})"
