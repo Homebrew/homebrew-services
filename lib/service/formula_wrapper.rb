@@ -212,7 +212,8 @@ module Service
         result = system_command(
           System.launchctl.to_s,
           args:         ["list", service_name],
-          print_stderr: false,
+          print_stdout: :debug,
+          print_stderr: :debug,
         )
         output = result.stdout.chomp
 
@@ -223,7 +224,8 @@ module Service
           result = system_command(
             System.launchctl.to_s,
             args:         ["print", "#{System.domain_target}/#{service_name}"],
-            print_stderr: false,
+            print_stdout: :debug,
+            print_stderr: :debug,
           )
           output = result.stdout.chomp
           success = result.success? && output.present?
