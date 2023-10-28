@@ -213,7 +213,7 @@ module Service
         chown "root", group, service.dest
         plist_data = service.dest.read
         plist = begin
-          Plist.parse_xml(plist_data)
+          Plist.parse_xml(plist_data, marshal: false)
         rescue
           nil
         end
@@ -307,16 +307,11 @@ module Service
         contents = service.service_file.read
 
         if sudo_service_user && System.launchctl?
-          require "rexml/document"
-
           # set the username in the new plist file
           ohai "Setting username in #{service.service_name} to #{System.user}"
-          plist = REXML::Document.new(contents)
-          dict_element = REXML::XPath.first(plist, "/plist/dict/")
-          dict_element.add_element("key").text = "UserName"
-          dict_element.add_element("string").text = sudo_service_user
-
-          plist.to_s
+          plist_data = Plist.parse_xml(contents, marshal: false)
+          plist_data["UserName"] = sudo_service_user
+          plist_data.to_plist
         else
           contents
         end
