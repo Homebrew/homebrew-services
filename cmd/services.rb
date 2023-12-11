@@ -91,8 +91,12 @@ module Homebrew
       raise UsageError, "The `#{subcommand}` subcommand does not accept the --all argument!" if args.all?
     end
 
-    if ::Service::Commands::Start::TRIGGERS.include?(subcommand) && args.all? && args.file.present?
-      raise UsageError, "The start subcommand does not accept the --all and --file= arguments at the same time!"
+    if args.file
+      if ::Service::Commands::Start::TRIGGERS.exclude?(subcommand)
+        raise UsageError, "The `#{subcommand}` subcommand does not accept the --file= argument!"
+      elsif args.all?
+        raise UsageError, "The start subcommand does not accept the --all and --file= arguments at the same time!"
+      end
     end
 
     opoo "The --all argument overrides provided formula argument!" if formula.present? && args.all?
@@ -119,7 +123,7 @@ module Homebrew
     when *::Service::Commands::Info::TRIGGERS
       ::Service::Commands::Info.run(targets, verbose: args.verbose?, json: args.json?)
     when *::Service::Commands::Restart::TRIGGERS
-      ::Service::Commands::Restart.run(targets, args.file, verbose: args.verbose?)
+      ::Service::Commands::Restart.run(targets, verbose: args.verbose?)
     when *::Service::Commands::Run::TRIGGERS
       ::Service::Commands::Run.run(targets, verbose: args.verbose?)
     when *::Service::Commands::Start::TRIGGERS
