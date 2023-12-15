@@ -91,14 +91,12 @@ describe Service::System do
     end
 
     it "SystemD - returns the boot path" do
-      allow(described_class).to receive(:launchctl?).and_return(false)
-      allow(described_class).to receive(:systemctl?).and_return(true)
+      allow(described_class).to receive_messages(launchctl?: false, systemctl?: true)
       expect(described_class.boot_path.to_s).to eq("/usr/lib/systemd/system")
     end
 
     it "Unknown - returns no boot path" do
-      allow(described_class).to receive(:launchctl?).and_return(false)
-      allow(described_class).to receive(:systemctl?).and_return(false)
+      allow(described_class).to receive_messages(launchctl?: false, systemctl?: false)
       expect(described_class.boot_path.to_s).to eq("")
     end
   end
@@ -106,22 +104,19 @@ describe Service::System do
   describe "#user_path" do
     it "macOS - returns the user path" do
       ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:launchctl?).and_return(true)
-      allow(described_class).to receive(:systemctl?).and_return(false)
+      allow(described_class).to receive_messages(launchctl?: true, systemctl?: false)
       expect(described_class.user_path.to_s).to eq("/tmp_home/Library/LaunchAgents")
     end
 
     it "systemD - returns the user path" do
       ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:launchctl?).and_return(false)
-      allow(described_class).to receive(:systemctl?).and_return(true)
+      allow(described_class).to receive_messages(launchctl?: false, systemctl?: true)
       expect(described_class.user_path.to_s).to eq("/tmp_home/.config/systemd/user")
     end
 
     it "Unknown - returns no user path" do
       ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:launchctl?).and_return(false)
-      allow(described_class).to receive(:systemctl?).and_return(false)
+      allow(described_class).to receive_messages(launchctl?: false, systemctl?: false)
       expect(described_class.user_path.to_s).to eq("")
     end
   end
@@ -129,33 +124,25 @@ describe Service::System do
   describe "#path" do
     it "macOS - user - returns the current relevant path" do
       ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:root?).and_return(false)
-      allow(described_class).to receive(:launchctl?).and_return(true)
-      allow(described_class).to receive(:systemctl?).and_return(false)
+      allow(described_class).to receive_messages(root?: false, launchctl?: true, systemctl?: false)
       expect(described_class.path.to_s).to eq("/tmp_home/Library/LaunchAgents")
     end
 
     it "macOS - root- returns the current relevant path" do
       ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:root?).and_return(true)
-      allow(described_class).to receive(:launchctl?).and_return(true)
-      allow(described_class).to receive(:systemctl?).and_return(false)
+      allow(described_class).to receive_messages(root?: true, launchctl?: true, systemctl?: false)
       expect(described_class.path.to_s).to eq("/Library/LaunchDaemons")
     end
 
     it "systemD - user - returns the current relevant path" do
       ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:root?).and_return(false)
-      allow(described_class).to receive(:launchctl?).and_return(false)
-      allow(described_class).to receive(:systemctl?).and_return(true)
+      allow(described_class).to receive_messages(root?: false, launchctl?: false, systemctl?: true)
       expect(described_class.path.to_s).to eq("/tmp_home/.config/systemd/user")
     end
 
     it "systemD - root- returns the current relevant path" do
       ENV["HOME"] = "/tmp_home"
-      allow(described_class).to receive(:root?).and_return(true)
-      allow(described_class).to receive(:launchctl?).and_return(false)
-      allow(described_class).to receive(:systemctl?).and_return(true)
+      allow(described_class).to receive_messages(root?: true, launchctl?: false, systemctl?: true)
       expect(described_class.path.to_s).to eq("/usr/lib/systemd/system")
     end
   end

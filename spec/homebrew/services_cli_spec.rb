@@ -15,8 +15,7 @@ describe Service::ServicesCli do
 
   describe "#running" do
     it "macOS - returns the currently running services" do
-      allow(Service::System).to receive(:launchctl?).and_return(true)
-      allow(Service::System).to receive(:systemctl?).and_return(false)
+      allow(Service::System).to receive_messages(launchctl?: true, systemctl?: false)
       allow(Utils).to receive(:popen_read).and_return <<~EOS
         77513   50  homebrew.mxcl.php
         495     0   homebrew.mxcl.node_exporter
