@@ -93,6 +93,8 @@ module Service
       return true unless formula.plist.nil?
       return false unless formula.opt_prefix.exist?
       return true if Keg.for(formula.opt_prefix).plist_installed?
+
+      false
     rescue NotAKegError
       false
     end
@@ -155,13 +157,13 @@ module Service
     # Get current PID of daemon process from status output.
     def pid
       status_output, _, status_type = status_output_success_type
-      return Regexp.last_match(1).to_i if status_output =~ pid_regex(status_type)
+      Regexp.last_match(1).to_i if status_output =~ pid_regex(status_type)
     end
 
     # Get current exit code of daemon process from status output.
     def exit_code
       status_output, _, status_type = status_output_success_type
-      return Regexp.last_match(1).to_i if status_output =~ exit_code_regex(status_type)
+      Regexp.last_match(1).to_i if status_output =~ exit_code_regex(status_type)
     end
 
     def to_hash
