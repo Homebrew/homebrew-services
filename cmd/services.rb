@@ -102,12 +102,21 @@ module Homebrew
     opoo "The --all argument overrides provided formula argument!" if formula.present? && args.all?
 
     targets = if args.all?
-      ::Service::Formulae.available_services
+      if subcommand == "start"
+        ::Service::Formulae.available_services(loaded: false, skip_root: !::Service::System.root?)
+      elsif subcommand == "stop"
+        ::Service::Formulae.available_services(loaded: true, skip_root: !::Service::System.root?)
+      else
+        ::Service::Formulae.available_services
+      end
     elsif formula
       [::Service::FormulaWrapper.new(Formulary.factory(formula))]
     else
       []
     end
+
+    # Exit successfully if --all was used but there is nothing to do
+    return if args.all? && targets.empty?
 
     if ::Service::System.systemctl?
       ENV["DBUS_SESSION_BUS_ADDRESS"] = ENV.fetch("HOMEBREW_DBUS_SESSION_BUS_ADDRESS", nil)
