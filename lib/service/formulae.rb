@@ -4,15 +4,20 @@ module Service
   module Formulae
     module_function
 
-    # All available services
+    # All available services, with optional filters applied
     # @private
-    def available_services
+    def available_services(loaded: nil, skip_root: false)
       require "formula"
 
-      Formula.installed
-             .map { |formula| FormulaWrapper.new(formula) }
-             .select { |formula| formula.service? || formula.plist? }
-             .sort_by(&:name)
+      formulae = Formula.installed
+                        .map { |formula| FormulaWrapper.new(formula) }
+                        .select { |formula| formula.service? || formula.plist? }
+                        .sort_by(&:name)
+
+      formulae = formulae.select { |formula| formula.loaded? == loaded } unless loaded.nil?
+      formulae = formulae.reject { |formula| formula.owner == "root" } if skip_root
+
+      formulae
     end
 
     # List all available services with status, user, and path to the file.
