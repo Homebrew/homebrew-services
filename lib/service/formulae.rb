@@ -10,18 +10,14 @@ module Service
       require "formula"
 
       formulae = Formula.installed
-             .map { |formula| FormulaWrapper.new(formula) }
-             .select { |formula| formula.service? || formula.plist? }
-             .sort_by(&:name)
+                        .map { |formula| FormulaWrapper.new(formula) }
+                        .select { |formula| formula.service? || formula.plist? }
+                        .sort_by(&:name)
 
-      if loaded != nil
-        formulae = formulae.select { |formula| formula.loaded? == loaded }
-      end
-      if skip_root
-        formulae = formulae.select { |formula| formula.owner != "root" }
-      end
+      formulae = formulae.select { |formula| formula.loaded? == loaded } unless loaded.nil?
+      formulae = formulae.reject { |formula| formula.owner == "root" } if skip_root
 
-      return formulae
+      formulae
     end
 
     # List all available services with status, user, and path to the file.
