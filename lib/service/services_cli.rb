@@ -29,9 +29,9 @@ module Service
                          "--state=running",
                          "--no-pager",
                          "--no-legend")
-      end.chomp.split("\n").map do |svc|
+      end.chomp.split("\n").filter_map do |svc|
         Regexp.last_match(0) if svc =~ /homebrew(?>\.mxcl)?\.([\w+-.@]+)/
-      end.compact
+      end
     end
 
     # Check if formula has been found.

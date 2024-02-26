@@ -10,7 +10,7 @@ end
 require "active_support/core_ext/string"
 
 PROJECT_ROOT = Pathname(__dir__).parent.freeze
-Dir.glob("#{PROJECT_ROOT}/lib/**/*.rb").sort.each do |file|
+Dir.glob("#{PROJECT_ROOT}/lib/**/*.rb").each do |file|
   require file
 end
 
