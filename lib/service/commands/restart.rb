@@ -24,11 +24,11 @@ module Service
             # group not-started services with started ones for restart
             started << service
           end
-          ServicesCli.stop([service], verbose: verbose) if service.loaded?
+          ServicesCli.stop([service], verbose:) if service.loaded?
         end
 
-        ServicesCli.run(ran, verbose: verbose) if ran.present?
-        ServicesCli.start(started, verbose: verbose) if started.present?
+        ServicesCli.run(ran, verbose:) if ran.present?
+        ServicesCli.start(started, verbose:) if started.present?
       end
     end
   end

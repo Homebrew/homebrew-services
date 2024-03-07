@@ -9,7 +9,7 @@ module Service
 
       def run(targets, verbose:, no_wait:)
         ServicesCli.check(targets) &&
-          ServicesCli.stop(targets, verbose: verbose, no_wait: no_wait)
+          ServicesCli.stop(targets, verbose:, no_wait:)
       end
     end
   end

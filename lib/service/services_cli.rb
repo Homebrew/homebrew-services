@@ -283,12 +283,12 @@ module Service
 
       if System.launchctl?
         file = enable ? service.dest : service.service_file
-        launchctl_load(service, file: file, enable: enable)
+        launchctl_load(service, file:, enable:)
       elsif System.systemctl?
         # Systemctl loads based upon location so only install service
         # file when it is not installed. Used with the `run` command.
         install_service_file(service, nil) unless service.dest.exist?
-        systemd_load(service, enable: enable)
+        systemd_load(service, enable:)
       end
 
       function = enable ? "started" : "ran"

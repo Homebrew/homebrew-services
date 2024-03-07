@@ -74,7 +74,7 @@ describe Service::Commands::List do
 
     it "prints an error code" do
       file = Pathname.new("/tmp/file.file")
-      formula = { name: "a", user: "u", file: file, status: :error, exit_code: 256, loaded: true }
+      formula = { name: "a", user: "u", file:, status: :error, exit_code: 256, loaded: true }
       expected_output = "<BOLD>Name Status        User File<RESET>\na    <RED>error  <RESET>256 u    /tmp/file.file\n"
       expect do
         described_class.print_table([formula])
@@ -102,7 +102,7 @@ describe Service::Commands::List do
 
     it "includes an exit code" do
       file = Pathname.new("/tmp/file.file")
-      formula = { name: "a", user: "u", file: file, status: :error, exit_code: 256, loaded: true }
+      formula = { name: "a", user: "u", file:, status: :error, exit_code: 256, loaded: true }
       filtered_formula = formula.slice(*described_class::JSON_FIELDS)
       expected_output = "#{JSON.pretty_generate([filtered_formula])}\n"
       expect do
