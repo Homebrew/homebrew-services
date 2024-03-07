@@ -9,7 +9,7 @@ module Service
 
       def run(targets, custom_plist, verbose:)
         ServicesCli.check(targets) &&
-          ServicesCli.start(targets, custom_plist, verbose: verbose)
+          ServicesCli.start(targets, custom_plist, verbose:)
       end
     end
   end

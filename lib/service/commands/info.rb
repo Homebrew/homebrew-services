@@ -18,7 +18,7 @@ module Service
         end
 
         output.each do |hash|
-          puts output(hash, verbose: verbose)
+          puts output(hash, verbose:)
         end
       end
 

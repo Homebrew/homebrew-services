@@ -168,13 +168,13 @@ module Service
 
     def to_hash
       hash = {
-        name:         name,
-        service_name: service_name,
+        name:,
+        service_name:,
         running:      pid?,
         loaded:       loaded?(cached: true),
         schedulable:  timed?,
-        pid:          pid,
-        exit_code:    exit_code,
+        pid:,
+        exit_code:,
         user:         owner,
         status:       status_symbol,
         file:         service_file_present? ? dest : service_file,

@@ -9,7 +9,7 @@ module Service
 
       def run(targets, verbose:)
         ServicesCli.check(targets) &&
-          ServicesCli.run(targets, verbose: verbose)
+          ServicesCli.run(targets, verbose:)
       end
     end
   end

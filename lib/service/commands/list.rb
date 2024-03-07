@@ -43,7 +43,7 @@ module Service
           status += formula[:exit_code].to_s if formula[:status] == :error
           file    = formula[:file].to_s.gsub(Dir.home, "~").presence if formula[:loaded]
 
-          { name: formula[:name], status: status, user: formula[:user], file: file }
+          { name: formula[:name], status:, user: formula[:user], file: }
         end
 
         longest_name = [*services.map { |service| service[:name].length }, 4].max
