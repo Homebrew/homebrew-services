@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+if Version.new(HOMEBREW_VERSION) < Version.new("4.2.15")
+  odie "Your Homebrew is too outdated for `brew services`. Please run `brew update`!"
+end
+
 require "abstract_command"
 
 module Homebrew
