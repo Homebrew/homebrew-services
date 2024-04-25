@@ -27,7 +27,7 @@ jobs:
       uses: Homebrew/actions/setup-homebrew@master
 
     - name: Set up Ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@70da3bbf44ac06db1b0547ce2acc9380a5270d1e # v1.175.0
       with:
         bundler-cache: true
 
@@ -53,7 +53,7 @@ jobs:
       uses: Homebrew/actions/setup-homebrew@master
 
     - name: Set up Ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@70da3bbf44ac06db1b0547ce2acc9380a5270d1e # v1.175.0
       with:
         bundler-cache: true
 
