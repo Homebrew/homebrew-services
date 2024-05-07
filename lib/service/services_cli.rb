@@ -102,7 +102,7 @@ module Service
 
         odie "Formula `#{service.name}` is not installed." unless service.installed?
 
-        file ||= if service.service_file.exist? || System.systemctl? || service.formula.plist.blank?
+        file ||= if service.service_file.exist? || System.systemctl?
           nil
         elsif service.formula.opt_prefix.exist? && (keg = Keg.for service.formula.opt_prefix) && keg.plist_installed?
           service_file = Dir["#{keg}/*#{service.service_file.extname}"].first

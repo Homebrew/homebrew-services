@@ -11,7 +11,7 @@ module Service
 
       formulae = Formula.installed
                         .map { |formula| FormulaWrapper.new(formula) }
-                        .select { |formula| formula.service? || formula.plist? }
+                        .select(&:service?)
                         .sort_by(&:name)
 
       formulae = formulae.select { |formula| formula.loaded? == loaded } unless loaded.nil?
