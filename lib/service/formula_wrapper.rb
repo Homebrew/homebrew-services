@@ -63,12 +63,11 @@ module Service
 
     # Whether the service should be launched at startup
     def service_startup?
-      if service?
-        @service_startup ||= load_service.requires_root?
-        return @service_startup
+      @service_startup ||= if service?
+        load_service.requires_root?
+      else
+        false
       end
-
-      @service_startup ||= formula.plist_startup.present?
     end
 
     # Path to destination service directory. If run as root, it's `boot_path`, else `user_path`.
@@ -86,12 +85,11 @@ module Service
       formula.any_version_installed?
     end
 
-    # Returns `true` if the formula implements #plist or the plist file exists.
+    # Returns `true` if the plist file exists.
     def plist?
       return false unless installed?
       return true if service_file.file?
-      return true unless formula.plist.nil?
-      return false unless formula.opt_prefix.exist?
+      return false unless formula.opt_prefix&.exist?
       return true if Keg.for(formula.opt_prefix).plist_installed?
 
       false

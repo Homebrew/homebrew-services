@@ -135,13 +135,6 @@ describe Service::FormulaWrapper do
       File.delete(tempfile)
     end
 
-    it "true if plist" do
-      allow(service).to receive_messages(installed?:   true,
-                                         service_file: Pathname.new("/dev/null"),
-                                         formula:      OpenStruct.new(plist: "a"))
-      expect(service.plist?).to be(true)
-    end
-
     it "false if opt_prefix missing" do
       allow(service).to receive_messages(installed?:   true,
                                          service_file: Pathname.new("/dev/null"),
@@ -294,17 +287,6 @@ describe Service::FormulaWrapper do
 
       expect(service).to receive(:service?).once.and_return(true)
       expect(service).to receive(:load_service).once.and_return(service_stub)
-
-      expect(service.service_startup?).to be(true)
-    end
-
-    it "outputs true since there is a startup plist" do
-      allow(described_class).to receive(:service?).and_return(false)
-      formula = OpenStruct.new(
-        plist_startup: true,
-      )
-
-      service = described_class.new(formula)
 
       expect(service.service_startup?).to be(true)
     end
