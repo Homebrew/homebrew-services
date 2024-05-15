@@ -201,7 +201,7 @@ module Service
     # and avoid nameclashes with the current Service module.
     # It should be used instead of calling formula.service directly.
     def load_service
-      require_relative "../../../../../Homebrew/service"
+      require_relative "/usr/local/Homebrew/Library/Homebrew/service"
 
       formula.service
     end
