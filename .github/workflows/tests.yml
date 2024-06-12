@@ -45,8 +45,8 @@ jobs:
     - name: Enable linger
       if: matrix.os == 'ubuntu-latest'
       run: |
-        loginctl enable-linger $(whoami)
-        echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> $GITHUB_ENV
+        loginctl enable-linger "$(whoami)"
+        echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> "$GITHUB_ENV"
 
     - name: Set up Homebrew
       id: set-up-homebrew
@@ -59,8 +59,8 @@ jobs:
 
     - name: Unlink services repo
       run: |
-        rm $(brew --repo homebrew/services)
-        cp -a $PWD $(brew --repo homebrew/services)
+        rm "$(brew --repo homebrew/services)"
+        cp -a "$PWD" "$(brew --repo homebrew/services)"
 
     - name: Test start command
       run: |
@@ -105,5 +105,5 @@ jobs:
 
     - name: Link services repo
       run: |
-        rm -rf $(brew --repo homebrew/services)
-        ln -s $PWD $(brew --repo homebrew/services)
+        rm -rf "$(brew --repo homebrew/services)"
+        ln -s "$PWD" "$(brew --repo homebrew/services)"
