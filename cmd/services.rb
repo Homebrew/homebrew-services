@@ -5,6 +5,7 @@ if !Process.euid.zero? && Version.new(HOMEBREW_VERSION) < Version.new("4.2.15")
 end
 
 require "abstract_command"
+require "service"
 
 module Homebrew
   module Cmd
