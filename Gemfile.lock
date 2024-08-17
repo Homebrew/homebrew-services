@@ -32,6 +32,7 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
+    sorbet-runtime (0.5.11528)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     zeitwerk (2.6.17)
@@ -43,6 +44,7 @@ DEPENDENCIES
   activesupport
   rspec
   simplecov
+  sorbet-runtime
 
 RUBY VERSION
    ruby 3.3.4p94

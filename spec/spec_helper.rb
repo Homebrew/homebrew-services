@@ -16,6 +16,8 @@ end
 
 SimpleCov.formatters = [SimpleCov::Formatter::HTMLFormatter]
 
+require "sorbet-runtime"
+
 require "bundler"
 require "rspec/support/object_formatter"
 require "stub/exceptions"
