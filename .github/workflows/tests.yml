@@ -107,3 +107,15 @@ jobs:
       run: |
         rm -rf "$(brew --repo homebrew/services)"
         ln -s "$PWD" "$(brew --repo homebrew/services)"
+
+  sorbet:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Set up Homebrew
+      id: set-up-homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+
+    - run: brew typecheck homebrew/services
