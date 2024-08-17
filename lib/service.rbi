@@ -2,4 +2,5 @@
 
 module Service
   include Kernel
+  include FileUtils
 end

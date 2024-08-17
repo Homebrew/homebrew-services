@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 # Wrapper for a formula to handle service-related stuff like parsing and
@@ -12,7 +13,7 @@ module Service
       return unless path_or_label =~ path_or_label_regex
 
       begin
-        new(Formulary.factory(Regexp.last_match(1)))
+        new(Formulary.factory(T.must(Regexp.last_match(1))))
       rescue
         nil
       end

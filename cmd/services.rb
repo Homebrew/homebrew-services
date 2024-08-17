@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 homebrew_version = if HOMEBREW_VERSION.present?

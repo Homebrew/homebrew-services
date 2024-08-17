@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module Service
@@ -87,6 +88,8 @@ module Service
 
     # Start a service.
     def self.start(targets, service_file = nil, verbose: false)
+      file = T.let(nil, T.nilable(Pathname))
+
       if service_file.present?
         file = Pathname.new service_file
         raise UsageError, "Provided service file does not exist" unless file.exist?
@@ -202,7 +205,7 @@ module Service
       return unless System.root?
       return if sudo_service_user
 
-      root_paths = []
+      root_paths = T.let([], T::Array[Pathname])
 
       if System.systemctl?
         group = "root"
@@ -320,7 +323,7 @@ module Service
 
       rm service.dest if service.dest.exist?
       service.dest_dir.mkpath unless service.dest_dir.directory?
-      cp temp.path, service.dest
+      cp T.must(temp.path), service.dest
 
       # Clear tempfile.
       temp.close
