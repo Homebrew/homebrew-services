@@ -3,11 +3,9 @@
 module Service
   module Commands
     module Cleanup
-      module_function
-
       TRIGGERS = %w[cleanup clean cl rm].freeze
 
-      def run
+      def self.run
         cleaned = []
 
         cleaned += ServicesCli.kill_orphaned_services

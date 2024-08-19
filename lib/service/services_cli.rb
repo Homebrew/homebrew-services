@@ -4,23 +4,21 @@ module Service
   module ServicesCli
     extend FileUtils
 
-    module_function
-
-    def sudo_service_user
+    def self.sudo_service_user
       @sudo_service_user
     end
 
-    def sudo_service_user=(sudo_service_user)
+    def self.sudo_service_user=(sudo_service_user)
       @sudo_service_user = sudo_service_user
     end
 
     # Binary name.
-    def bin
+    def self.bin
       "brew services"
     end
 
     # Find all currently running services via launchctl list or systemctl list-units.
-    def running
+    def self.running
       if System.launchctl?
         Utils.popen_read(System.launchctl, "list")
       else
@@ -35,14 +33,14 @@ module Service
     end
 
     # Check if formula has been found.
-    def check(targets)
+    def self.check(targets)
       raise UsageError, "Formula(e) missing, please provide a formula name or use --all" if targets.empty?
 
       true
     end
 
     # Kill services that don't have a service file
-    def kill_orphaned_services
+    def self.kill_orphaned_services
       cleaned_labels = []
       cleaned_services = []
       running.each do |label|
@@ -59,7 +57,7 @@ module Service
       cleaned_labels
     end
 
-    def remove_unused_service_files
+    def self.remove_unused_service_files
       cleaned = []
       Dir["#{System.path}homebrew.*.{plist,service}"].each do |file|
         next if running.include?(File.basename(file).sub(/\.(plist|service)$/i, ""))
@@ -73,7 +71,7 @@ module Service
     end
 
     # Run a service as defined in the formula. This does not clean the service file like `start` does.
-    def run(targets, verbose: false)
+    def self.run(targets, verbose: false)
       targets.each do |service|
         if service.pid?
           puts "Service `#{service.name}` already running, use `#{bin} restart #{service.name}` to restart."
@@ -88,7 +86,7 @@ module Service
     end
 
     # Start a service.
-    def start(targets, service_file = nil, verbose: false)
+    def self.start(targets, service_file = nil, verbose: false)
       if service_file.present?
         file = Pathname.new service_file
         raise UsageError, "Provided service file does not exist" unless file.exist?
@@ -124,7 +122,7 @@ module Service
     end
 
     # Stop a service and unload it.
-    def stop(targets, verbose: false, no_wait: false)
+    def self.stop(targets, verbose: false, no_wait: false)
       targets.each do |service|
         unless service.loaded?
           rm service.dest if service.dest.exist? # get rid of installed service file anyway, dude
@@ -176,7 +174,7 @@ module Service
     end
 
     # Stop a service but keep it registered.
-    def kill(targets, verbose: false)
+    def self.kill(targets, verbose: false)
       targets.each do |service|
         if !service.pid?
           puts "Service `#{service.name}` is not started."
@@ -200,7 +198,7 @@ module Service
     end
 
     # protections to avoid users editing root services
-    def take_root_ownership(service)
+    def self.take_root_ownership(service)
       return unless System.root?
       return if sudo_service_user
 
@@ -264,17 +262,17 @@ module Service
       chmod "+t", root_paths
     end
 
-    def launchctl_load(service, file:, enable:)
+    def self.launchctl_load(service, file:, enable:)
       safe_system System.launchctl, "enable", "#{System.domain_target}/#{service.service_name}" if enable
       safe_system System.launchctl, "bootstrap", System.domain_target, file
     end
 
-    def systemd_load(service, enable:)
+    def self.systemd_load(service, enable:)
       safe_system(*System.systemctl_args, "start", service.service_name)
       safe_system(*System.systemctl_args, "enable", service.service_name) if enable
     end
 
-    def service_load(service, enable:)
+    def self.service_load(service, enable:)
       if System.root? && !service.service_startup?
         opoo "#{service.name} must be run as non-root to start at user login!"
       elsif !System.root? && service.service_startup?
@@ -295,7 +293,7 @@ module Service
       ohai("Successfully #{function} `#{service.name}` (label: #{service.service_name})")
     end
 
-    def install_service_file(service, file)
+    def self.install_service_file(service, file)
       odie "Formula `#{service.name}` is not installed" unless service.installed?
 
       unless service.service_file.exist?

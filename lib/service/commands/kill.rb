@@ -3,11 +3,9 @@
 module Service
   module Commands
     module Kill
-      module_function
-
       TRIGGERS = %w[kill k].freeze
 
-      def run(targets, verbose:)
+      def self.run(targets, verbose:)
         ServicesCli.check(targets) &&
           ServicesCli.kill(targets, verbose:)
       end

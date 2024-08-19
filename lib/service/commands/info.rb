@@ -3,11 +3,9 @@
 module Service
   module Commands
     module Info
-      module_function
-
       TRIGGERS = %w[info i].freeze
 
-      def run(targets, verbose:, json:)
+      def self.run(targets, verbose:, json:)
         return unless ServicesCli.check(targets)
 
         output = targets.map(&:to_hash)
@@ -22,7 +20,7 @@ module Service
         end
       end
 
-      def pretty_bool(bool)
+      def self.pretty_bool(bool)
         return bool if !$stdout.tty? || Homebrew::EnvConfig.no_emoji?
 
         if bool
@@ -32,7 +30,7 @@ module Service
         end
       end
 
-      def output(hash, verbose:)
+      def self.output(hash, verbose:)
         out = "#{Tty.bold}#{hash[:name]}#{Tty.reset} (#{hash[:service_name]})\n"
         out += "Running: #{pretty_bool(hash[:running])}\n"
         out += "Loaded: #{pretty_bool(hash[:loaded])}\n"

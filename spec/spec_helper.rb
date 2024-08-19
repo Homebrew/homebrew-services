@@ -35,96 +35,84 @@ RSpec.configure do |config|
 end
 
 module Formatter
-  module_function
-
-  def success(string)
+  def self.success(string)
     string
   end
 
-  def error(string)
+  def self.error(string)
     string
   end
 end
 
 module Tty
-  module_function
-
-  def green
+  def self.green
     "<GREEN>"
   end
 
-  def yellow
+  def self.yellow
     "<YELLOW>"
   end
 
-  def red
+  def self.red
     "<RED>"
   end
 
-  def default
+  def self.default
     "<DEFAULT>"
   end
 
-  def bold
+  def self.bold
     "<BOLD>"
   end
 
-  def reset
+  def self.reset
     "<RESET>"
   end
 end
 
 module Homebrew
   module EnvConfig
-    module_function
-
-    def no_emoji?
+    def self.no_emoji?
       false
     end
   end
 end
 
 module Utils
-  module_function
-
-  def popen_read(*_cmd)
+  def self.popen_read(*_cmd)
     ""
   end
 
-  def safe_popen_read(*_args)
+  def self.safe_popen_read(*_args)
     ""
   end
 end
 
 module Service
   module System
-    module_function
-
-    def which(cmd)
+    def self.which(cmd)
       "/bin/#{cmd}"
     end
   end
 
   module ServicesCli
-    module_function
-
-    def safe_system(*_cmd)
+    def self.safe_system(*_cmd)
       ""
     end
 
-    def quiet_system(*_cmd)
+    def self.quiet_system(*_cmd)
       true
     end
 
-    def odie(string)
+    def self.odie(string)
       raise TestExit, string
     end
 
-    def opoo(string)
+    def self.opoo(string)
       puts string
     end
 
-    def ohai(string)
+    def self.ohai(string)
       puts string
     end
   end
@@ -143,9 +131,7 @@ module Service
 
   module Commands
     module List
-      module_function
-
-      def opoo(string)
+      def self.opoo(string)
         puts string
       end
     end
