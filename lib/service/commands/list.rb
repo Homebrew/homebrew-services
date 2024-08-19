@@ -5,11 +5,9 @@ require "service/formulae"
 module Service
   module Commands
     module List
-      module_function
-
       TRIGGERS = [nil, "list", "ls"].freeze
 
-      def run(json: false)
+      def self.run(json: false)
         formulae = Formulae.services_list
         if formulae.blank?
           opoo "No services available to control with `#{Service::ServicesCli.bin}`" if $stderr.tty?
@@ -27,7 +25,7 @@ module Service
 
       # Print the JSON representation in the CLI
       # @private
-      def print_json(formulae)
+      def self.print_json(formulae)
         services = formulae.map do |formula|
           formula.slice(*JSON_FIELDS)
         end
@@ -37,7 +35,7 @@ module Service
 
       # Print the table in the CLI
       # @private
-      def print_table(formulae)
+      def self.print_table(formulae)
         services = formulae.map do |formula|
           status = get_status_string(formula[:status])
           status += formula[:exit_code].to_s if formula[:status] == :error
@@ -67,7 +65,7 @@ module Service
 
       # Get formula status output
       # @private
-      def get_status_string(status)
+      def self.get_status_string(status)
         case status
         when :started, :scheduled then "#{Tty.green}#{status}#{Tty.reset}"
         when :stopped, :none then "#{Tty.default}#{status}#{Tty.reset}"

@@ -4,49 +4,47 @@ module Service
   module System
     extend FileUtils
 
-    module_function
-
     # Path to launchctl binary.
-    def launchctl
+    def self.launchctl
       @launchctl ||= which("launchctl")
     end
 
     # Is this a launchctl system
-    def launchctl?
+    def self.launchctl?
       launchctl.present?
     end
 
     # Path to systemctl binary.
-    def systemctl
+    def self.systemctl
       @systemctl ||= which("systemctl")
     end
 
     # Is this a systemd system
-    def systemctl?
+    def self.systemctl?
       systemctl.present?
     end
 
     # Command scope modifier
-    def systemctl_scope
+    def self.systemctl_scope
       root? ? "--system" : "--user"
     end
 
     # Arguments to run systemctl.
-    def systemctl_args
+    def self.systemctl_args
       @systemctl_args ||= [systemctl, systemctl_scope]
     end
 
     # Woohoo, we are root dude!
-    def root?
+    def self.root?
       Process.euid.zero?
     end
 
     # Current user running `[sudo] brew services`.
-    def user
+    def self.user
       @user ||= ENV["USER"].presence || Utils.safe_popen_read("/usr/bin/whoami").chomp
     end
 
-    def user_of_process(pid)
+    def self.user_of_process(pid)
       if pid.nil? || pid.zero?
         user
       else
@@ -55,7 +53,7 @@ module Service
     end
 
     # Run at boot.
-    def boot_path
+    def self.boot_path
       if launchctl?
         Pathname.new("/Library/LaunchDaemons")
       elsif systemctl?
@@ -64,7 +62,7 @@ module Service
     end
 
     # Run at login.
-    def user_path
+    def self.user_path
       if launchctl?
         Pathname.new("#{Dir.home}/Library/LaunchAgents")
       elsif systemctl?
@@ -73,11 +71,11 @@ module Service
     end
 
     # If root, return `boot_path`, else return `user_path`.
-    def path
+    def self.path
       root? ? boot_path : user_path
     end
 
-    def domain_target
+    def self.domain_target
       if root?
         "system"
       elsif (ssh_tty = ENV.fetch("HOMEBREW_SSH_TTY", nil).present? && File.stat("/dev/console").uid != Process.uid) ||
