@@ -16,6 +16,8 @@ end
 
 SimpleCov.formatters = [SimpleCov::Formatter::HTMLFormatter]
 
+require "sorbet-runtime"
+
 require "bundler"
 require "rspec/support/object_formatter"
 require "stub/exceptions"
@@ -35,11 +37,11 @@ RSpec.configure do |config|
 end
 
 module Formatter
-  def self.success(string)
+  def self.success(string, label: nil)
     string
   end
 
-  def self.error(string)
+  def self.error(string, label: nil)
     string
   end
 end
