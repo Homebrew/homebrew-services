@@ -35,7 +35,7 @@ GEM
     sorbet-runtime (0.5.11553)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
-    zeitwerk (2.6.17)
+    zeitwerk (2.6.18)
 
 PLATFORMS
   ruby
