@@ -112,6 +112,7 @@ describe Service::FormulaWrapper do
 
     it "systemD - outputs if the service is loaded" do
       allow(Service::System).to receive_messages(launchctl?: false, systemctl?: true)
+      allow(Service::System::Systemctl).to receive(:quiet_run).and_return(false)
       allow(Utils).to receive(:safe_popen_read)
       expect(service.loaded?).to be(false)
     end

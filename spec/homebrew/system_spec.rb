@@ -21,24 +21,6 @@ describe Service::System do
     end
   end
 
-  describe "#systemctl_scope" do
-    it "outputs systemctl scope for user" do
-      allow(described_class).to receive(:root?).and_return(false)
-      expect(described_class.systemctl_scope).to eq("--user")
-    end
-
-    it "outputs systemctl scope for root" do
-      allow(described_class).to receive(:root?).and_return(true)
-      expect(described_class.systemctl_scope).to eq("--system")
-    end
-  end
-
-  describe "#systemctl" do
-    it "outputs systemctl command location" do
-      expect(described_class.systemctl).to eq("/bin/systemctl")
-    end
-  end
-
   describe "#root?" do
     it "checks if the command is ran as root" do
       expect(described_class.root?).to be(false)

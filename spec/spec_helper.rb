@@ -22,6 +22,8 @@ require "bundler"
 require "rspec/support/object_formatter"
 require "stub/exceptions"
 
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), "stub"))
+
 RSpec.configure do |config|
   config.filter_run_when_matching :focus
   config.expect_with :rspec do |c|
@@ -95,6 +97,12 @@ module Service
     def self.which(cmd)
       "/bin/#{cmd}"
     end
+
+    module Systemctl
+      def self.which(cmd)
+        System.which(cmd)
+      end
+    end
   end
 
   module ServicesCli
@@ -146,4 +154,10 @@ class Array
   end
 
   def verbose?; end
+end
+
+class SystemCommand
+  def self.run(_executable, **_options)
+    OpenStruct.new(stdout: "", success?: true)
+  end
 end

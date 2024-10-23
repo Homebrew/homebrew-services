@@ -1,6 +1,8 @@
 # typed: true
 # frozen_string_literal: true
 
+require_relative "system/systemctl"
+
 module Service
   module System
     extend FileUtils
@@ -15,24 +17,9 @@ module Service
       launchctl.present?
     end
 
-    # Path to systemctl binary.
-    def self.systemctl
-      @systemctl ||= which("systemctl")
-    end
-
     # Is this a systemd system
     def self.systemctl?
-      systemctl.present?
-    end
-
-    # Command scope modifier
-    def self.systemctl_scope
-      root? ? "--system" : "--user"
-    end
-
-    # Arguments to run systemctl.
-    def self.systemctl_args
-      @systemctl_args ||= [systemctl, systemctl_scope]
+      Systemctl.executable.present?
     end
 
     # Woohoo, we are root dude!
