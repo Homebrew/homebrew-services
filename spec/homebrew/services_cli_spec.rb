@@ -30,7 +30,7 @@ describe Service::ServicesCli do
 
     it "systemD - returns the currently running services" do
       allow(Service::System).to receive(:launchctl?).and_return(false)
-      allow(Utils).to receive(:popen_read).and_return <<~EOS
+      allow(Service::System::Systemctl).to receive(:popen_read).and_return <<~EOS
         homebrew.php.service     loaded active running Homebrew PHP service
         systemd-udevd.service    loaded active running Rule-based Manager for Device Events and Files
         udisks2.service          loaded active running Disk Manager
@@ -172,12 +172,14 @@ describe Service::ServicesCli do
 
   describe "#systemd_load" do
     it "checks non-enabling run" do
-      expect(Service::System).to receive(:systemctl_args).once.and_return(["/bin/launchctl", "--user"])
+      expect(Service::System::Systemctl).to receive(:executable).once.and_return("/bin/launchctl")
+      expect(Service::System::Systemctl).to receive(:scope).once.and_return("--user")
       services_cli.systemd_load(OpenStruct.new(service_name: "name"), enable: false)
     end
 
     it "checks enabling run" do
-      expect(Service::System).to receive(:systemctl_args).twice.and_return(["/bin/launchctl", "--user"])
+      expect(Service::System::Systemctl).to receive(:executable).twice.and_return("/bin/launchctl")
+      expect(Service::System::Systemctl).to receive(:scope).twice.and_return("--user")
       services_cli.systemd_load(OpenStruct.new(service_name: "name"), enable: true)
     end
   end
@@ -236,8 +238,7 @@ describe Service::ServicesCli do
     it "triggers systemctl" do
       expect(Service::System).to receive(:launchctl?).once.and_return(false)
       expect(Service::System).to receive(:systemctl?).once.and_return(true)
-      expect(Service::System).to receive(:systemctl_args).once
-      expect(Service::System).to receive(:root?).twice.and_return(false)
+      expect(Service::System).to receive(:root?).thrice.and_return(false)
       expect do
         services_cli.service_load(
           OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false,
@@ -249,8 +250,7 @@ describe Service::ServicesCli do
     it "represents correct action" do
       expect(Service::System).to receive(:launchctl?).once.and_return(false)
       expect(Service::System).to receive(:systemctl?).once.and_return(true)
-      expect(Service::System).to receive(:systemctl_args).twice
-      expect(Service::System).to receive(:root?).twice.and_return(false)
+      expect(Service::System).to receive(:root?).exactly(4).times.and_return(false)
       expect do
         services_cli.service_load(
           OpenStruct.new(name: "name", service_name: "service.name", service_startup?: false,
