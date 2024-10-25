@@ -125,7 +125,7 @@ module Service
     end
 
     # Stop a service and unload it.
-    def self.stop(targets, verbose: false, no_wait: false)
+    def self.stop(targets, verbose: false, no_wait: false, max_wait: 0)
       targets.each do |service|
         unless service.loaded?
           rm service.dest if service.dest.exist? # get rid of installed service file anyway, dude
@@ -156,8 +156,11 @@ module Service
         elsif System.launchctl?
           quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
           unless no_wait
-            while $CHILD_STATUS.to_i == 9216 || service.loaded?
-              sleep(1)
+            time_slept = 0
+            sleep_time = 1
+            while ($CHILD_STATUS.to_i == 9216 || service.loaded?) && (max_wait.zero? || time_slept < max_wait)
+              sleep(sleep_time)
+              time_slept += sleep_time
               quiet_system System.launchctl, "bootout", "#{System.domain_target}/#{service.service_name}"
             end
           end

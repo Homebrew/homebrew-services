@@ -23,4 +23,7 @@ class Homebrew::Cmd::Services::Args < Homebrew::CLI::Args
 
   sig { returns(T.nilable(String)) }
   def sudo_service_user; end
+
+  sig { returns(T.nilable(String)) }
+  def max_wait; end
 end

@@ -54,9 +54,12 @@ module Homebrew
         EOS
         flag "--file=", description: "Use the service file from this location to `start` the service."
         flag "--sudo-service-user=", description: "When run as root on macOS, run the service(s) as this user."
+        flag "--max-wait=", description: "Wait at most this many seconds for `stop` to finish stopping a service. " \
+                                         "Omit this flag or set this to zero (0) seconds to wait indefinitely."
         switch "--all", description: "Run <subcommand> on all services."
         switch "--json", description: "Output as JSON."
         switch "--no-wait", description: "Don't wait for `stop` to finish stopping the service."
+        conflicts "--max-wait=", "--no-wait"
         named_args max: 2
       end
 
@@ -146,7 +149,8 @@ module Homebrew
         when *::Service::Commands::Start::TRIGGERS
           ::Service::Commands::Start.run(targets, args.file, verbose: args.verbose?)
         when *::Service::Commands::Stop::TRIGGERS
-          ::Service::Commands::Stop.run(targets, verbose: args.verbose?, no_wait: args.no_wait?)
+          max_wait = args.max_wait.to_f
+          ::Service::Commands::Stop.run(targets, verbose: args.verbose?, no_wait: args.no_wait?, max_wait:)
         when *::Service::Commands::Kill::TRIGGERS
           ::Service::Commands::Kill.run(targets, verbose: args.verbose?)
         else
