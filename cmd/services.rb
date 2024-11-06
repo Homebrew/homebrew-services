@@ -150,7 +150,7 @@ module Homebrew
           ::Service::Commands::Start.run(targets, args.file, verbose: args.verbose?)
         when *::Service::Commands::Stop::TRIGGERS
           max_wait = args.max_wait.to_f
-          ::Service::Commands::Stop.run(targets, verbose: args.verbose?, no_wait: args.no_wait?, max_wait:)
+          ::Service::Commands::Stop.run(targets, verbose: args.verbose?, no_wait: args.no_wait?, max_wait: max_wait)
         when *::Service::Commands::Kill::TRIGGERS
           ::Service::Commands::Kill.run(targets, verbose: args.verbose?)
         else
