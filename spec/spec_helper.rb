@@ -7,6 +7,7 @@ SimpleCov.start do
   minimum_coverage 20
 end
 
+require "active_support/core_ext/object/blank"
 require "active_support/core_ext/string"
 
 PROJECT_ROOT = Pathname(__dir__).parent.freeze
