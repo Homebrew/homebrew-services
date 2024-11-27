@@ -139,7 +139,7 @@ describe Service::FormulaWrapper do
 
     it "false if opt_prefix missing" do
       allow(service).to receive_messages(installed?:   true,
-                                         service_file: Pathname.new("/dev/null"),
+                                         service_file: Pathname.new(File::NULL),
                                          formula:      OpenStruct.new(plist:      nil,
                                                                       opt_prefix: Pathname.new("/dfslkfhjdsolshlk")))
       expect(service.plist?).to be(false)

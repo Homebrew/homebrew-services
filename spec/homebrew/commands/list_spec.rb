@@ -21,7 +21,7 @@ describe Service::Commands::List do
 
     it "succeeds with list" do
       out = "<BOLD>Name    Status       User File<RESET>\nservice <GREEN>started<RESET> user /dev/null\n"
-      formula = OpenStruct.new(name: "service", user: "user", status: :started, file: +"/dev/null", loaded: true)
+      formula = OpenStruct.new(name: "service", user: "user", status: :started, file: +File::NULL, loaded: true)
       expect(Service::Formulae).to receive(:services_list).and_return([formula])
       expect do
         described_class.run
