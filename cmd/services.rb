@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 homebrew_version = if HOMEBREW_VERSION.present?
@@ -63,6 +63,7 @@ module Homebrew
         named_args max: 2
       end
 
+      sig { override.void }
       def run
         # pbpaste's exit status is a proxy for detecting the use of reattach-to-user-namespace
         if ENV["HOMEBREW_TMUX"] && (File.exist?("/usr/bin/pbpaste") && !quiet_system("/usr/bin/pbpaste"))
