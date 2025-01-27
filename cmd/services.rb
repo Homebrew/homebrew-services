@@ -25,7 +25,7 @@ module Homebrew
           Linux's `systemctl`(1) service manager.
 
           If `sudo` is passed, operate on `/Library/LaunchDaemons` or `/usr/lib/systemd/system`  (started at boot).
-          Otherwise, operate on `~/Library/LaunchAgents` or `~/.config/systemd/user` (started at login).
+          Otherwise, operate on `${HOME}/Library/LaunchAgents` or `${HOME}/.config/systemd/user` (started at login).
 
           [`sudo`] `brew services` [`list`] (`--json`) (`--debug`):
           List information about all managed services for the current user (or root).
