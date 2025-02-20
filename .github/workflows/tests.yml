@@ -64,44 +64,44 @@ jobs:
 
     - name: Test start command
       run: |
-        brew install consul
-        brew services start consul
-        brew services list | grep consul
+        brew install influxdb influxdb-cli
+        brew services start influxdb
+        brew services list | grep influxdb
         sleep 5
-        consul kv get -recurse
+        influx ping
 
     - name: Test restart command
       run: |
-        brew services stop consul
+        brew services stop influxdb
         sleep 5
-        brew services run consul
-        brew services restart consul
-        brew services list | grep consul
+        brew services run influxdb
+        brew services restart influxdb
+        brew services list | grep influxdb
         sleep 5
-        consul kv get -recurse
+        influx ping
 
     - name: Test stop command
       run: |
-        brew services stop consul
+        brew services stop influxdb
         sleep 5
-        brew services list | grep consul | grep none
+        brew services list | grep influxdb | grep none
 
     - name: Test run command
       run: |
-        brew services run consul
+        brew services run influxdb
         sleep 5
-        consul kv get -recurse
-        brew services stop consul
+        influx ping
+        brew services stop influxdb
 
     - name: Test list command
       run: |
-        brew services | grep consul
+        brew services | grep influxdb
 
     - name: Test info command
       run: |
-        brew services info consul | grep consul
-        brew services info consul --verbose | grep consul
-        brew services info consul --json | ruby -e "require 'json'" -e "puts JSON.parse(ARGF.read)"
+        brew services info influxdb | grep influxdb
+        brew services info influxdb --verbose | grep influxdb
+        brew services info influxdb --json | ruby -e "require 'json'" -e "puts JSON.parse(ARGF.read)"
 
     - name: Link services repo
       run: |
